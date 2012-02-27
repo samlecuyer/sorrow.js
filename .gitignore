@@ -1,0 +1,3 @@
+*.o
+src/gen/*
+deps/v8
