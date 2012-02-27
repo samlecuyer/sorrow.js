@@ -1,3 +1,4 @@
 *.o
 src/gen/*
 deps/v8
+sorrow
