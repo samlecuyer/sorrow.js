@@ -88,6 +88,21 @@ var results = test.run({
         assert.equal(   0, d[8]);
         assert.equal(   0, d[9]);
     },
+    testByteArray_fillNumber: function() {
+        var d = new b.ByteArray(10);
+        d.fill(7);
+        for (var i = 0; i < 10; i++) {
+            assert.equal(d[i], 7, 'all values should be the same');
+        }
+    },
+    testByteArray_fillByteArray: function() {
+        var a = new b.ByteArray(10);
+        var d = new b.ByteArray([13]);
+        a.fill(d);
+        for (var i = 0; i < 10; i++) {
+            assert.equal(a[i], 13, 'all values should be the same');
+        }
+    },
     testByteArray_toString: function() {
         var d = new b.ByteArray(10);
         assert.equal(d.toString(), '[ByteArray 10]');
@@ -96,5 +111,3 @@ var results = test.run({
 });
 
 assert.equal(results, 0);
-
-cons.log('DONE', 'info');
