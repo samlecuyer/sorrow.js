@@ -19,8 +19,9 @@ namespace sorrow {
 	Handle<String> ReadFile(const char* name);
 	void ReportException(TryCatch* handler);
 	void LoadNativeLibraries(Handle<Object> natives);
-	
 	void RunArgs(int argc, char* argv[]);
+	
+	void BinaryTypes(Handle<Object> internals);
 
 	static Persistent<Object> internals;
 	
@@ -221,9 +222,11 @@ namespace sorrow {
 		internals->Set(String::New("quit"), FunctionTemplate::New(Quit)->GetFunction());
 		internals->Set(String::New("version"), FunctionTemplate::New(Version)->GetFunction());
 		
-		Local<Object> libsObject = Object::New();
+		Handle<Object> libsObject = Object::New();
 		LoadNativeLibraries(libsObject);
-		internals->Set(String::New("natives"), libsObject);
+		internals->Set(String::New("stdlib"), libsObject);
+		
+		BinaryTypes(internals);
 		
 		return internals;
 	} // SetupInternals

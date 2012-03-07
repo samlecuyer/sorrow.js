@@ -1,65 +1,55 @@
-(function(internals) {
+/*
+ copyright 2012 sam l'ecuyer
+*/
+
+(function(_impl) {
     var global = this;
     var makeGlobal = function(k, v) { global[k] = v; };
-    makeGlobal('print', internals.print);
-    
-    var require = function(ident) {
-        if (ident == 'internals') 
-            return internals;
-        var module = Module.getCached(ident);
-        if (module) {
-            return module.exports;
-        }
-        module = new Module(ident).load().cache();
-        return module.exports;
-    }
-    
-    // this is a super simple module system.
-    // needs major work to be remotely ready for production
-    function Module(id) {
+    makeGlobal('print', _impl.print);
+        
+    function Lib(id) {
         this.id = id;
         this.filename = id + '.js';
         this.exports = {};
         this.loaded = false;
     }
     
-    Module._cache = {};
+    Lib._sources = _impl.stdlib;
+    Lib._cache = {};
     
-    Module.prototype.cache = function() {
-        Module._cache[this.id] = this;
-        return this;
-    };
-    
-    Module.getCached = function(id) {
-        return Module._cache[id];
-    };
-    
-    Module.prototype.load = function() {
-        if (!this.loaded) {
-            var script = internals.read(this.filename);
-            var fn = new Function(['exports', 'module', 'require'], script);
-            fn.call(this, this.exports, {id: this.id}, require);
+    Lib.require = function(ident) {
+        if (ident == '_impl') 
+            return _impl;
+        if (ident == 'stdlib') 
+            return Lib;
+            
+        var lib = Lib.getCached(ident);
+        if (lib) {
+            return lib.exports;
         }
-        return this;
+        
+        lib = new Lib(ident);
+        lib.cache();
+        lib.load();
+        lib.cache();
+        return lib.exports;
+    }
+    
+    Lib.prototype.cache = function() {
+        Lib._cache[this.id] = this;
     };
     
-    Module.prototype._loadNative = function(script) {
-        if (!this.loaded) {
-            var fn = new Function(['exports', 'module', 'require'], script);
-            fn.call(this, this.exports, {id: this.id}, require);
-        }
-        return this;
+    Lib.getCached = function(id) {
+        return Lib._cache[id];
     };
     
-    for (id in internals.natives) {
-        var lib = internals.natives[id];
-        var module = Module.getCached(id);
-        if (module) {
-            return module.exports;
-        }
-        new Module(id)._loadNative(lib).cache();
+    Lib.prototype.load = function() {
+        var script = Lib._sources[this.id];
+        var fn = new Function(['exports', 'module', 'require'], script);
+        fn.call(this, this.exports, {id: this.id}, Lib.require);
+        this.loaded = true;
     };
     
-    makeGlobal('require', require);
+    makeGlobal('require', Lib.require);
     
 });
