@@ -57,7 +57,41 @@ var results = test.run({
         assert.throws(function() {
             new b.ByteArray('Hello, world', 'ebcdic');
         }, 'should not support ebcdic');
-    }
+    },
+    testByteArray_toByteArray: function() {
+        var a = new b.ByteArray([1,2,3,4,5]);
+        var c = a.toByteArray();
+        assert.equal(a.length, 5, 'should be length 10');
+        for (var i = 0; i < 5; i++) {
+            assert.equal(a[i], c[i], 'all values should be the same');
+        }
+    },
+    testByteArray_getCodeAt: function() {
+        var a = new b.ByteArray([1,2,3,4,5]);
+        assert.equal(a[3], a.get(3), 'accessors should bahave the same');
+        assert.equal(a[3], a.codeAt(3), 'accessors should bahave the same');
+    },
+    testByteArray_copy: function() {
+        var c = new b.ByteArray([1,2,3,4,5]);
+        var d = new b.ByteArray(10);
+        
+        c.copy(d, 0, 4, 3);
+        
+        assert.equal(   0, d[0]);
+        assert.equal(   0, d[1]);
+        assert.equal(   0, d[2]);
+        assert.equal(c[0], d[3]);
+        assert.equal(c[1], d[4]);
+        assert.equal(c[2], d[5]);
+        assert.equal(c[3], d[6]);
+        assert.equal(   0, d[7]);
+        assert.equal(   0, d[8]);
+        assert.equal(   0, d[9]);
+    },
+    testByteArray_toString: function() {
+        var d = new b.ByteArray(10);
+        assert.equal(d.toString(), '[ByteArray 10]');
+    },
     
 });
 
