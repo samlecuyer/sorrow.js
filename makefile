@@ -5,11 +5,11 @@ ARCH = -arch i386
 V8ARCH = ia32.release
 INCS = -Ideps/v8/include/
 LIBS = -Ldeps/v8/out/$(V8ARCH) -lv8_base -lv8_snapshot
-CCFILES = src/sorrow.cpp src/sorrow_binary.cpp
+CCFILES = src/sorrow.cpp src/sorrow_binary.cpp src/sorrow_io.cpp
 
 all: sorrow
 
-sorrow: libv8 $(CCFILES) src/gen/sorrow_natives.h
+sorrow: libv8 $(CCFILES) src/gen/sorrow_natives.h src/sorrow.h
 	$(CC) $(ARCH) $(CCFILES)  $(INCS) $(LIBS) -o sorrow
 
 src/gen/sorrow_natives.h: src/gen/sorrow.js lib/*.js

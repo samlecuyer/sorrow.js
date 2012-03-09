@@ -5,23 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "sorrow.h"
 #include "gen/sorrow_natives.h"
 
 namespace sorrow {
 	using namespace v8;
-	
-	Local<Value> ExecuteString(Handle<String> source, Handle<Value> filename);
-	Handle<Value> LoadFile(const Arguments& args);
-	Handle<Value> Print(const Arguments& args);
-	Handle<Value> Read(const Arguments& args);
-	Handle<Value> Quit(const Arguments& args);
-	Handle<Value> Version(const Arguments& args);
-	Handle<String> ReadFile(const char* name);
-	void ReportException(TryCatch* handler);
-	void LoadNativeLibraries(Handle<Object> natives);
-	void RunArgs(int argc, char* argv[]);
-	
-	void BinaryTypes(Handle<Object> internals);
 
 	static Persistent<Object> internals;
 	
@@ -39,8 +27,7 @@ namespace sorrow {
 				printf(" ");
 			}
 			String::Utf8Value str(args[i]);
-			const char* cstr = ToCString(str);
-			printf("%s", cstr);
+			printf("%s", *str);
 		}
 		printf("\n");
 		fflush(stdout);
@@ -226,9 +213,10 @@ namespace sorrow {
 		LoadNativeLibraries(libsObject);
 		internals->Set(String::New("stdlib"), libsObject);
 		
-		BinaryTypes(internals);
+		SetupBinaryTypes(internals);
+		SetupIOStreams(internals);
 		
-		return internals;
+        return internals;
 	} // SetupInternals
 	
 	int Main(int argc, char *argv[]) {

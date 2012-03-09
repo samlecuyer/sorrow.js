@@ -6,6 +6,7 @@ var assert = require('assert');
 var cons = require('console');
 var test = require('test');
 var b    = require('binary');
+var io   = require('io');
 
 assert.ok(cons.log, 'log exists');
 assert.ok(test.run, 'run exists');
@@ -52,10 +53,10 @@ var results = test.run({
         }
     },
     testByteArrayConstructors_stringCharset: function() {
-        assert.ok(new b.ByteArray('Καλημέρα κόσμε', 'us-ascii'), 'should support ascii');
+        assert.ok(new b.ByteArray('Hello, world', 'us-ascii'), 'should support ascii');
         assert.ok(new b.ByteArray('こんにちは 世界', 'utf-8'), 'should support utf-8');
         assert.throws(function() {
-            new b.ByteArray('Hello, world', 'ebcdic');
+            new b.ByteArray('Καλημέρα κόσμε', 'ebcdic');
         }, 'should not support ebcdic');
     },
     testByteArray_toByteArray: function() {
@@ -107,6 +108,69 @@ var results = test.run({
         var d = new b.ByteArray(10);
         assert.equal(d.toString(), '[ByteArray 10]');
     },
+    
+    testByteStringIsBinary: function() {
+        var bs = new b.ByteString();
+        assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
+        assert.ok(bs instanceof b.Binary, 'should be instanceof Binary');
+        assert.ok(bs instanceof Object, 'should be instanceof Object');
+    },
+    testByteStringConstructor_empty: function() {
+        var bs = new b.ByteString();
+        assert.equal(bs.length, 0, 'should be length 0');
+    },
+    testByteStringConstructor_index: function() {
+        var bs = new b.ByteString([1, 2, 3]);
+        var a = bs[1];
+        assert.equal(a.length, 1, 'should be length 1');
+        assert.equal(a.codeAt(0), 2, 'should be 2');
+        assert.ok(a instanceof b.ByteString, 'should be instanceof ByteString');
+        assert.ok(a instanceof b.Binary, 'should be instanceof Binary');
+        assert.ok(a instanceof Object, 'should be instanceof Object');
+    },
+    
+    testByteStringConstructor_toByteArray: function() {
+        var bs = new b.ByteString([1, 2, 3]);
+        var ba = new b.ByteArray(bs);
+        assert.equal(ba.length, 3, 'should be length 3');
+        assert.ok(ba instanceof b.ByteArray, 'should be instanceof ByteArray');
+        assert.equal(1, ba[0]);
+        assert.equal(2, ba[1]);
+        assert.equal(3, ba[2]);
+    },
+    
+    testByteStringConstructor_join: function() {
+        var bs = b.ByteString.join([1,2,3], 0);
+        assert.equal(bs.length, 5, 'should be length 5');
+        assert.equal(1, bs.codeAt(0));
+        assert.equal(0, bs.codeAt(1));
+        assert.equal(2, bs.codeAt(2));
+        assert.equal(0, bs.codeAt(3));
+        assert.equal(3, bs.codeAt(4));
+    },
+    
+    testRawStreamConstructor_join: function() {
+        var stream = new io.Stream('driver.js', 'rb');
+        // read 10 bytes
+        var bs = stream.read(10);
+        assert.equal(bs.length, 10);
+        assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
+        // read the whole file
+        bs = stream.read();
+        assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
+        //this is reading at eof
+        bs = stream.read(10);
+        assert.equal(bs.length, 0);
+        assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
+    },
+    
+    testRawStreamConstructor_read: function() {
+        var stream = new io.Stream('driver.js', 'rb');
+        // read 10 bytes
+        var bs = stream.read(10000);
+        assert.ok(bs.length < 10000, 'shouldnt be 10000 bytes long');
+        assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
+    }
     
 });
 
