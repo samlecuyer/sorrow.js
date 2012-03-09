@@ -5,7 +5,7 @@ div.wrapper {
     padding: 50px 30px;
 }
 
-h1, div {
+h1, p {
     margin: 30px 50px;
 }
 
@@ -14,11 +14,11 @@ h1 {
 }
 
 body {
-    background-image:url('stripe.png');
-    background-repeat:repeat;
+    background-image: url('rough_diagonal.png');
+    background-repeat: repeat;
 }
 
-a, h1, div {
+a, h1, p {
     font-family:"Georgia", Times, serif;
     color: #444;
 }
