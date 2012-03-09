@@ -1,0 +1,24 @@
+div.wrapper {
+    width: 800px;
+    margin: 0px auto;
+    background-color: #fafafa;
+    padding: 50px 30px;
+}
+
+h1, div {
+    margin: 30px 50px;
+}
+
+h1 {
+    text-align: center;
+}
+
+body {
+    background-image:url('stripe.png');
+    background-repeat:repeat;
+}
+
+a, h1, div {
+    font-family:"Georgia", Times, serif;
+    color: #444;
+}
