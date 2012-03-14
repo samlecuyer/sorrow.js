@@ -206,20 +206,23 @@ var results = test.run({
         assert.equal(raw, text.raw, 'should be equal');
     }, 
     
-    testTextStreamConstructor_1: function() {
-        //var f = fs.open('test_data1', 'r');
-        //var lines = f.readLines();
-        //lines.forEach(function(line) {
-        //    io.stdout.writeLine(line);
-        //}); 
-    }, 
-    
     testFilesystem_copy: function() {
         var inf = fs.open('test/data/test_data1', 'r');
         var outf = fs.open('test/data/tmp_test_data2', 'w');
         inf.copy(outf);
     }, 
     
+    testFilesystem_pwd: function() {
+        assert.ok(fs.cwd, 'There should be a cwd');
+    }, 
+    
+    testModule_require: function() {
+        var yo = require('./a').yo('This shouldnt throw an exception');
+        assert.equal(5, yo, 'Should be 5');
+    }
 });
 
 assert.equal(results, 0, 'all tests should pass');
+
+var cwd = fs.cwd;
+print(cwd);
