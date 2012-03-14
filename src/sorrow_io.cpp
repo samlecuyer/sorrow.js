@@ -7,31 +7,20 @@
 namespace sorrow {
 	using namespace v8;
     
+    Persistent<Function> rawStream_f;
+    Persistent<Function> textStream_f;
+    
 	void ExternalWeakIOCallback(Persistent<Value> object, void* file) {
         fclose((FILE*)file);
 		object.Dispose();
 	}
     
     const char isRawStreamPropName[] = "_is_raw_stream_";
-    
-    Handle<Value> RawStreamPositionGetter(Local<String> property, const AccessorInfo& info) {
-        FILE *file = (FILE*)info.This()->ToObject()->GetPointerFromInternalField(0);
-        if (file == NULL) {
-            return ThrowException(String::New("Could not get stream position"));
-        }
-        int pos = ftell(file);
-        return Integer::New(pos);
-    }
-    
-    void RawStreamPositionSetter(Local<String> property, Local<Value> value, const AccessorInfo& info) {
-        FILE *file = (FILE*)info.This()->ToObject()->GetPointerFromInternalField(0);
-        int pos = value->IntegerValue();
-        fseek(file, pos, SEEK_CUR);
-    }
-	
+    const char isTextStreamPropName[] = "_is_text_stream_";
+
     // args[0] - file name
     // args[1] - {app, ate, binary, read, write, trunc}
-	Handle<Value> RawIOStream(const Arguments& args) {
+	JS_FUNCTN(RawIOStream) {
         HandleScope scope;
 		Handle<Object> rawStream = args.This();
         
@@ -41,9 +30,10 @@ namespace sorrow {
             String::Utf8Value mode(args[1]);
             
             file = fopen(*name, *mode);
-            if (file == NULL) {
-                return ThrowException(String::New("Could not open stream"));
-            }
+            NULL_STREAM_EXCEPTION(file, "Could not open stream")
+        } else if (args[0]->IsExternal()) {
+			// ByteString([buffer], size)
+            file = (FILE*)External::Unwrap(args[0]);
         } else {
             return ThrowException(String::New("This is not a valid constructor call"));
         }
@@ -55,39 +45,64 @@ namespace sorrow {
 		rawStream->Set(String::New(isRawStreamPropName), True(), ReadOnly);
 		return rawStream;
 	}
-	
-    Handle<Value> RawIOStreamClose(const Arguments& args) {
-        FILE *file = (FILE*)args.This()->ToObject()->GetPointerFromInternalField(0);
-        if (file == NULL) {
-            return ThrowException(String::New("Could not close stream"));
+    
+    JS_GETTER(RawStreamPositionGetter) {
+        FILE *file = (FILE*)info.This()->ToObject()->GetPointerFromInternalField(0);
+        NULL_STREAM_EXCEPTION(file, "Could not get position")
+        int pos = ftell(file);
+        return Integer::New(pos);
+    }
+    
+    JS_SETTER(RawStreamPositionSetter) {
+        FILE *file = (FILE*)info.This()->ToObject()->GetPointerFromInternalField(0);
+        int pos = value->IntegerValue();
+        fseek(file, pos, SEEK_SET);
+        if (ferror(file)) {
+            clearerr(file);
+            ThrowException(String::New("Could not set stream position"));
         }
+    }
+	
+    JS_FUNCTN(RawIOStreamClose) {
+        FILE *file = (FILE*)args.This()->ToObject()->GetPointerFromInternalField(0);
+        NULL_STREAM_EXCEPTION(file, "Could not close stream")
         fclose(file);
         if (ferror(file)) {
+            clearerr(file);
             return ThrowException(String::New("Could not close stream"));
         }
         return Undefined();
 	}	
 	
-    Handle<Value> RawIOStreamFlush(const Arguments& args) {
+    JS_FUNCTN(RawIOStreamFlush) {
         FILE *file = (FILE*)args.This()->ToObject()->GetPointerFromInternalField(0);
-        if (file == NULL) {
-            return ThrowException(String::New("Could not flush stream"));
-        }
+        NULL_STREAM_EXCEPTION(file, "Could not flush stream")
         fflush(file);
         if (ferror(file)) {
+            clearerr(file);
             return ThrowException(String::New("Could not flush stream"));
         }
         return Undefined();
 	}	
     
-    Handle<Value> RawIOStreamRead(const Arguments& args) {
+    JS_FUNCTN(RawIOStreamSkip) {
+        FILE *file = (FILE*)args.This()->ToObject()->GetPointerFromInternalField(0);
+        int dist = args[0]->IntegerValue();
+        NULL_STREAM_EXCEPTION(file, "Could not skip on stream")
+        fseek(file, dist, SEEK_CUR);
+        if (ferror(file)) {
+            clearerr(file);
+            return ThrowException(String::New("Could not skip stream"));
+        }
+        return Undefined();
+	}	
+    
+    JS_FUNCTN(RawIOStreamRead) {
         HandleScope scope;
         FILE *file = (FILE*)args.This()->ToObject()->GetPointerFromInternalField(0);
+        NULL_STREAM_EXCEPTION(file, "Could not read from stream")
         int n;
         uint8_t *buffer;
-        if (ferror(file)) {
-            return ThrowException(String::New("Stream is in a bad state"));
-        }
         if (feof(file)) {
             Local<Value> bs = byteString_f->NewInstance();
             return scope.Close(bs);
@@ -111,27 +126,137 @@ namespace sorrow {
             return ThrowException(String::New("Not a valid invocation"));
         }
         int readBytes = fread(buffer, sizeof(uint8_t), n, file);
+        if (ferror(file)) {
+            clearerr(file);
+            delete[] buffer;
+            return ThrowException(String::New("Stream is in a bad state"));
+        }
 		Local<Value> bsArgs[2] = { External::New(buffer), Integer::New(readBytes) };
 		Local<Value> bs = byteString_f->NewInstance(2, bsArgs);
         delete[] buffer;
         return scope.Close(bs);
-	}	
+	}
+	
+    JS_FUNCTN(RawIOStreamWrite) {
+        HandleScope scope;
+        FILE *file = (FILE*)args.This()->ToObject()->GetPointerFromInternalField(0);
+        NULL_STREAM_EXCEPTION(file, "Could not write to stream")
+        const void *data;
+        int size;
+        
+        if (args.Length() == 0) {
+            return ThrowException(String::New("This requires at least one parameter"));
+        } else if (args.Length() == 1) {
+            size = args[0]->ToObject()->Get(String::New("length"))->IntegerValue();
+            data = args[0]->ToObject()->GetPointerFromInternalField(0);
+        } else {
+            return ThrowException(String::New("Not currently supported."));
+        }
+        int wrote = fwrite(data, sizeof(uint8_t), size, file);
+        if (ferror(file) || wrote != size) {
+            clearerr(file);
+            return ThrowException(String::New("Could not write to stream"));
+        }
+        return Integer::New(wrote);
+	}
+    
+    // args[0] - raw stream
+    // args[1] - {app, ate, binary, read, write, trunc}
+	JS_FUNCTN(TextIOStream) {
+        HandleScope scope;
+		Handle<Object> textStream = args.This();
+        
+        if (args.Length() == 2 && args[0]->IsObject() && args[1]->IsObject()) {
+            textStream->Set(String::New(isRawStreamPropName), True(), ReadOnly);
+            textStream->Set(String::New("raw"), args[0]->ToObject(), ReadOnly);
+        } else {
+            return ThrowException(String::New("This is not a valid constructor call"));
+        }
+		return textStream;
+	}
+    
+    JS_FUNCTN(TextIOStreamReadLine) {
+        HandleScope scope;
+        FILE *file = (FILE*)args.This()->Get(String::New("raw"))
+                        ->ToObject()->GetPointerFromInternalField(0);
+        NULL_STREAM_EXCEPTION(file, "Could not read from stream")
+        int n = 4096;
+        char *buffer;
+        if (feof(file)) {
+            return ThrowException(String::New("EOF"));
+        }
+        buffer = new char[n+1];
+        buffer[n] = '\0';
+        fgets(buffer, n, file);
+        if (ferror(file)) {
+            clearerr(file);
+            delete[] buffer;
+            return ThrowException(String::New("Error reading line"));
+        }
+        int length = strlen(buffer);
+		Handle<String> stringVal = String::New(buffer, length);
+        delete[] buffer;
+        return stringVal;
+    }
+    
+    JS_FUNCTN(TextIOStreamWriteLine) {
+        HandleScope scope;
+        FILE *file = (FILE*)args.This()->Get(String::New("raw"))
+                ->ToObject()->GetPointerFromInternalField(0);
+        NULL_STREAM_EXCEPTION(file, "Could not read from stream")
+        String::Utf8Value val(args[0]);
+        fwrite(*val, sizeof(char), val.length(), file);
+        if (!args[1]->IsTrue()) {
+            printf("printing newline\n");
+            fwrite("\n", 1, 1, file);
+        }
+        if (ferror(file)) {
+            clearerr(file);
+            return ThrowException(String::New("Error writing line"));
+        }
+        return Undefined();
+    }
 	
 	void SetupIOStreams(Handle<Object> internals) {
 		HandleScope scope;
 		
+        // Create RawStream type
 		Local<FunctionTemplate> rawStream_t = FunctionTemplate::New(RawIOStream);
         Local<ObjectTemplate> rawStream_ot = rawStream_t->InstanceTemplate();
         
         rawStream_ot->SetAccessor(String::New("position"), 
                                   RawStreamPositionGetter, 
                                   RawStreamPositionSetter);
-        rawStream_ot->Set(String::New("close"), FunctionTemplate::New(RawIOStreamClose)->GetFunction());
-        rawStream_ot->Set(String::New("flush"), FunctionTemplate::New(RawIOStreamFlush)->GetFunction());
-        rawStream_ot->Set(String::New("read"), FunctionTemplate::New(RawIOStreamRead)->GetFunction());
+        rawStream_ot->Set(String::New("close"), FN_OF_TMPLT(RawIOStreamClose));
+        rawStream_ot->Set(String::New("flush"), FN_OF_TMPLT(RawIOStreamFlush));
+        rawStream_ot->Set(String::New("skip"),  FN_OF_TMPLT(RawIOStreamSkip));
+        rawStream_ot->Set(String::New("read"),  FN_OF_TMPLT(RawIOStreamRead));
+        rawStream_ot->Set(String::New("write"), FN_OF_TMPLT(RawIOStreamWrite));
         rawStream_ot->SetInternalFieldCount(1);
 		
-		internals->Set(String::New("RawStream"), rawStream_t->GetFunction());
+        rawStream_f = Persistent<Function>::New(rawStream_t->GetFunction());
+		internals->Set(String::New("RawStream"), rawStream_f);
+        
+        // Create TextStreamType
+        Local<FunctionTemplate> textStream_t = FunctionTemplate::New(TextIOStream);
+        Local<ObjectTemplate> textStream_ot = textStream_t->InstanceTemplate();
+		
+        textStream_ot->Set(String::New("readLine"),  FN_OF_TMPLT(TextIOStreamReadLine));
+        textStream_ot->Set(String::New("writeLine"), FN_OF_TMPLT(TextIOStreamWriteLine));
+        
+        textStream_f = Persistent<Function>::New(textStream_t->GetFunction());
+		internals->Set(String::New("TextStream"), textStream_f);
+        
+        // seup standard streams
+        Local<Value> rawInArgs[1] = { External::New(stdin) };
+        Local<Object> rawIn = rawStream_f->NewInstance(1, rawInArgs);
+        Local<Value> stdinArgs[2] = { rawIn, Object::New() };
+		internals->Set(String::New("stdin"), textStream_f->NewInstance(2, stdinArgs));
+        
+        Local<Value> rawOutArgs[1] = { External::New(stdout) };
+        Local<Object> rawOut = rawStream_f->NewInstance(1, rawOutArgs);
+        Local<Value> stdoutArgs[2] = { rawOut, Object::New() };
+		internals->Set(String::New("stdout"), textStream_f->NewInstance(2, stdoutArgs));
 	}
 	
 }

@@ -43,9 +43,14 @@
         return Lib._cache[id];
     };
     
+    Lib.wrap = function(script) {
+        return '(function(exports, module, require) {'+script +'\n});';
+    };
+    
     Lib.prototype.load = function() {
         var script = Lib._sources[this.id];
-        var fn = new Function(['exports', 'module', 'require'], script);
+        var wrappedScript = Lib.wrap(script);
+        var fn = _impl.compile(wrappedScript, this.filename);
         fn.call(this, this.exports, {id: this.id}, Lib.require);
         this.loaded = true;
     };

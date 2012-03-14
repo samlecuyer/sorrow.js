@@ -16,8 +16,8 @@ namespace sorrow {
 	const char* ToCString(const String::Utf8Value& value) {
 		return *value ? *value : "<string conversion failed>";
 	} // ToCString
-	
-	Handle<Value> Print(const Arguments& args) {
+    
+	JS_FUNCTN(Print) {
 		bool first = true;
 		for (int i = 0; i < args.Length(); i++) {
 			HandleScope handle_scope;
@@ -34,7 +34,7 @@ namespace sorrow {
 		return Undefined();
 	} // Print
 	
-	Handle<Value> Read(const Arguments& args) {
+	JS_FUNCTN(Read) {
 		if (args.Length() != 1) {
 			return ThrowException(String::New("Bad parameters"));
 		}
@@ -49,13 +49,13 @@ namespace sorrow {
 		return source;
 	} // Read
 	
-	Handle<Value> Quit(const Arguments& args) {
+	JS_FUNCTN(Quit) {
 		int exit_code = args[0]->Int32Value();
 		exit(exit_code);
 		return Undefined();
 	} // Quit
 	
-	Handle<Value> Version(const Arguments& args) {
+	JS_FUNCTN(Version) {
 		return String::New(V8::GetVersion());
 	} // Version
 	
@@ -116,7 +116,7 @@ namespace sorrow {
 		}
 	} // ReportException
 	
-	Handle<Value> LoadFile(const Arguments& args) {
+	JS_FUNCTN(LoadFile) {
 		for (int i = 0; i < args.Length(); i++) {
 			HandleScope handle_scope;
 			String::Utf8Value file(args[i]);
@@ -174,6 +174,14 @@ namespace sorrow {
 		
 		return scope.Close(result);
 	} // ExecuteString
+    
+    JS_FUNCTN(CompileScript) {
+		HandleScope scope;
+        Local<String> script = args[0]->ToString();
+		Local<String> source = args[1]->ToString();
+		Local<Value> result = ExecuteString(script, source);
+		return scope.Close(result);
+	} // CompileScript
 	
 	void Load(Handle<Object> internals) {
 		TryCatch tryCatch;
@@ -203,11 +211,12 @@ namespace sorrow {
 		Local<FunctionTemplate> internals_template = FunctionTemplate::New();
 		internals = Persistent<Object>::New(internals_template->GetFunction()->NewInstance());
 		
-		internals->Set(String::New("print"), FunctionTemplate::New(Print)->GetFunction());
-		internals->Set(String::New("read"), FunctionTemplate::New(Read)->GetFunction());
-		internals->Set(String::New("load"), FunctionTemplate::New(LoadFile)->GetFunction());
-		internals->Set(String::New("quit"), FunctionTemplate::New(Quit)->GetFunction());
-		internals->Set(String::New("version"), FunctionTemplate::New(Version)->GetFunction());
+		internals->Set(String::New("print"),   FN_OF_TMPLT(Print));
+		internals->Set(String::New("read"),    FN_OF_TMPLT(Read));
+		internals->Set(String::New("load"),    FN_OF_TMPLT(LoadFile));
+		internals->Set(String::New("quit"),    FN_OF_TMPLT(Quit));
+		internals->Set(String::New("version"), FN_OF_TMPLT(Version));
+        internals->Set(String::New("compile"), FN_OF_TMPLT(CompileScript));
 		
 		Handle<Object> libsObject = Object::New();
 		LoadNativeLibraries(libsObject);

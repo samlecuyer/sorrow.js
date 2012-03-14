@@ -11,7 +11,7 @@ namespace sorrow {
     Persistent<Function> byteArray_f;
 
     
-	Handle<Value> BinaryFunction(const Arguments& args) {
+	JS_FUNCTN(BinaryFunction) {
 		return ThrowException(String::New("Binary is non-instantiable"));
 	}
     
@@ -23,7 +23,7 @@ namespace sorrow {
 	const char isByteArrayPropName[] = "_is_byte_array_";
 	const char isByteStringPropName[] = "_is_byte_string_";
     
-    Handle<Value> ByteStringCodeAt(const Arguments& args) {
+    JS_FUNCTN(ByteStringCodeAt) {
         HandleScope scope;
         Local<Object> byteString = args.This();
         uint64_t index = args[0]->IntegerValue();
@@ -34,6 +34,7 @@ namespace sorrow {
         uint8_t *data = (uint8_t*)byteString->GetPointerFromInternalField(0);
         return Number::New(data[index]);
     }
+
     
     Handle<Value> ByteStringIndexedGetter(uint32_t index, const AccessorInfo &info) {
         HandleScope scope;
@@ -58,9 +59,18 @@ namespace sorrow {
         clone->ForceSet(String::New("length"), Integer::New(size), ReadOnly);
 		return scope.Close(clone);
     }
+    
+    JS_FUNCTN(ByteStringDecodeToString) {
+        HandleScope scope;
+        Local<Object> byteString = args.This();
+        Local<String> charset = args[0]->ToString();
+        uint64_t byteString_len = byteString->Get(String::New("length"))->IntegerValue();
+        const char *data = (char*)byteString->GetPointerFromInternalField(0);
+        return String::New(data, byteString_len);
+    }
 
     
-    Handle<Value> ByteString(const Arguments& args) {
+    JS_FUNCTN(ByteString) {
         Handle<Object> string = args.This();
 		uint64_t size;
 		void *data;
@@ -123,7 +133,7 @@ namespace sorrow {
 		} else if (args.Length() == 2 && args[0]->IsString() && args[1]->IsString()) {
 			// ByteString(string, charset)
 			HandleScope scope;
-			if (args[1]->Equals(String::New("us-ascii"))) {
+			if (args[1]->Equals(String::New("ascii"))) {
 				String::AsciiValue val(args[0]);
 				size = val.length();
 				data = calloc(size, sizeof(uint8_t));
@@ -150,7 +160,7 @@ namespace sorrow {
 		return string;
     }
 	
-	Handle<Value> ByteArray(const Arguments& args) {
+	JS_FUNCTN(ByteArray) {
 		Handle<Object> array = args.This();
 		int64_t size;
 		void *data;
@@ -252,7 +262,8 @@ namespace sorrow {
 		byteString_t->Inherit(binary_t);
         
         byteString_ot->SetIndexedPropertyHandler(ByteStringIndexedGetter);
-        byteString_ot->Set(String::New("codeAt"), FunctionTemplate::New(ByteStringCodeAt)->GetFunction());
+        byteString_ot->Set(String::New("codeAt"), FN_OF_TMPLT(ByteStringCodeAt));
+        byteString_ot->Set(String::New("decodeToString"), FN_OF_TMPLT(ByteStringDecodeToString));
         byteString_ot->SetInternalFieldCount(1);
 		
         byteString_f = Persistent<Function>::New(byteString_t->GetFunction());
