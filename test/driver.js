@@ -8,6 +8,11 @@ var test = require('test');
 var b    = require('binary');
 var io   = require('io');
 var fs   = require('fs');
+var dir  = fs.directory(module.uri);
+
+function resolve(path) {
+    return fs.join(dir, path);
+}
 
 assert.ok(cons.log, 'log exists');
 assert.ok(test.run, 'run exists');
@@ -151,7 +156,7 @@ var results = test.run({
     },
     
     testRawStreamConstructor_read: function() {
-        var stream = new io.Stream('test/driver.js', 'rb');
+        var stream = new io.Stream(resolve('driver.js'), 'rb');
         // read 10 bytes
         var bs = stream.read(10);
         assert.equal(bs.length, 10);
@@ -166,21 +171,21 @@ var results = test.run({
     },
     
     testRawStreamConstructor_skip: function() {
-        var stream = new io.Stream('test/driver.js', 'rb');
+        var stream = new io.Stream(resolve('driver.js'), 'rb');
         assert.equal(0, stream.position, 'should be at start');
         stream.skip(10);
         assert.equal(10, stream.position, 'should have skipped 10');
     },
     
     testRawStreamConstructor_readWayTooMuch: function() {
-        var stream = new io.Stream('test/driver.js', 'rb');
+        var stream = new io.Stream(resolve('driver.js'), 'rb');
         var bs = stream.read(10000);
         assert.ok(bs.length < 10000, 'shouldnt be 10000 bytes long');
         assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
     },
     
     testByteStringConstructor_readDecode: function() {
-        var stream = new io.Stream('test/driver.js', 'rb');
+        var stream = new io.Stream(resolve('driver.js'), 'rb');
         var bs = stream.read(10);
         assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
         assert.equal(typeof bs.decodeToString(), 'string', 'should be a String');
@@ -193,28 +198,42 @@ var results = test.run({
     
     testRawStreamConstructor_copyShouldFailOnReadTarget: function() {
         assert.throws(function() {
-            var ins = new io.Stream('driver.js', 'rb');
-            var outs = new io.Stream('driver_2.js', 'rb');
+            var ins = new io.Stream(resolve('driver.js'), 'rb');
+            var outs = new io.Stream(resolve('driver_2.js'), 'rb');
             ins.copy(outs);
         }, 'should have failed');
     },
    
     testTextStreamConstructor: function() {
-        var raw = new io.Stream('test/driver.js', 'r');
+        var raw = new io.Stream(resolve('driver.js'), 'r');
         var text = new io.TextStream(raw, {});
         
         assert.equal(raw, text.raw, 'should be equal');
     }, 
     
     testFilesystem_copy: function() {
-        var inf = fs.open('test/data/test_data1', 'r');
-        var outf = fs.open('test/data/tmp_test_data2', 'w');
+        var inf = fs.open(resolve('data/test_data1'), 'r');
+        var outf = fs.open(resolve('data/tmp_test_data2'), 'w');
         inf.copy(outf);
     }, 
     
     testFilesystem_pwd: function() {
         assert.ok(fs.cwd, 'There should be a cwd');
     }, 
+    
+    testFilesystem_splitJoin: function() {
+        var path = '/web/home/sam';
+        var splitPath = fs.split(path);
+        var joinPath  = fs.join.apply(this,splitPath);
+        assert.equal(path, joinPath, 'the paths should be identical');
+    },
+    
+    testFilesystem_normal1: function() {
+        var path = '/web/home/sam';
+        var splitPath = fs.split(path);
+        var joinPath  = fs.join.apply(this,splitPath);
+        assert.equal(path, joinPath, 'the paths should be identical');
+    },
     
     testModule_require: function() {
         var yo = require('./a').yo('This shouldnt throw an exception');
@@ -223,6 +242,3 @@ var results = test.run({
 });
 
 assert.equal(results, 0, 'all tests should pass');
-
-var cwd = fs.cwd;
-print(cwd);

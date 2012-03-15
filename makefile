@@ -5,7 +5,7 @@ ARCH = -arch i386
 V8ARCH = ia32.release
 INCS = -Ideps/v8/include/
 LIBS = -Ldeps/v8/out/$(V8ARCH) -lv8_base -lv8_snapshot
-CCFILES = src/sorrow.cpp src/sorrow_binary.cpp src/sorrow_io.cpp
+CCFILES = src/sorrow.cpp src/sorrow_binary.cpp src/sorrow_io.cpp src/sorrow_fs.cpp
 
 all: sorrow
 

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define NULL_STREAM_EXCEPTION(file, message) \
     if (file == NULL) { \
@@ -49,6 +50,11 @@ namespace sorrow {
     // Can only be used after types are setup
     extern Persistent<Function> byteString_f;
     extern Persistent<Function> byteArray_f;
+    
+    /**
+     * sorrow_io.cpp
+     */
+    void SetupFS(Handle<Object> internals);
     
 }
 

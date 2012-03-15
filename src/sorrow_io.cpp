@@ -60,6 +60,7 @@ namespace sorrow {
         if (ferror(file)) {
             clearerr(file);
             ThrowException(String::New("Could not set stream position"));
+            return;
         }
     }
 	
@@ -207,7 +208,6 @@ namespace sorrow {
         String::Utf8Value val(args[0]);
         fwrite(*val, sizeof(char), val.length(), file);
         if (!args[1]->IsTrue()) {
-            printf("printing newline\n");
             fwrite("\n", 1, 1, file);
         }
         if (ferror(file)) {

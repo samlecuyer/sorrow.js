@@ -183,18 +183,6 @@ namespace sorrow {
 		Local<Value> result = ExecuteString(script, source);
 		return scope.Close(result);
 	} // CompileScript
-    
-    JS_GETTER(CwdGetter) {
-        char *path = NULL;
-        size_t size;
-        path = getcwd(path, size);
-        return String::New(path);
-    }
-    
-    JS_SETTER(CwdSetter) {
-        // currently not implemented
-    }
-
 	
 	void Load(Handle<Object> internals) {
 		TryCatch tryCatch;
@@ -232,8 +220,6 @@ namespace sorrow {
         internals->Set(String::New("compile"), FN_OF_TMPLT(CompileScript));
         
         internals->Set(String::New("arg"), String::New(argv[1]));
-        
-        internals->SetAccessor(String::New("cwd"), CwdGetter);
 		
 		Handle<Object> libsObject = Object::New();
 		LoadNativeLibraries(libsObject);
@@ -241,6 +227,7 @@ namespace sorrow {
 		
 		SetupBinaryTypes(internals);
 		SetupIOStreams(internals);
+        SetupFS(internals);
 		
         return internals;
 	} // SetupInternals
