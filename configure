@@ -187,7 +187,7 @@ def configure_v8(o):
 
 output = {
   'variables': {},
-  'include_dirs': [],
+  'include_dirs': ['<(SHARED_INTERMEDIATE_DIR)'],
   'libraries': [],
   'defines': [],
   'cflags': [],

@@ -22,14 +22,14 @@
 			'type': 'executable',
 			
 			'dependencies': [
-				'sorrow_js2c#host',
+				'sorrow_js2c',
 				'deps/v8/tools/gyp/v8.gyp:v8',
 			],
 			
 			'include_dirs': [
 				'src',
-				'deps/v8/include',
 				'<(SHARED_INTERMEDIATE_DIR)',
+				'deps/v8/include',
 			],
 	  
 			'sources': [
@@ -53,13 +53,12 @@
 		{
 			'target_name': 'sorrow_js2c',
 			'type': 'none',
-			'toolsets': ['host'],
 			'actions': [
 				{
 					'action_name': 'sorrow_js2c',
 					'inputs': [
-						'tools/js2c.py',
 						'<@(library_files)',
+						'./config.gypi',
 					],
 					
 					'outputs': [
