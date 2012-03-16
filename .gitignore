@@ -1,3 +1,6 @@
 *.o
+config.*
 deps/v8
+tools/gyp
+out
 sorrow
