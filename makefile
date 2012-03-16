@@ -1,28 +1,25 @@
-CC = g++
-JSC = tools/js2c.py
-JSMIN = java -jar tools/yuicompressor-2.4.7.jar
-ARCH = -arch i386
-V8ARCH = ia32.release
-INCS = -Ideps/v8/include/
-LIBS = -Ldeps/v8/out/$(V8ARCH) -lv8_base -lv8_snapshot
-CCFILES = src/sorrow.cpp src/sorrow_binary.cpp src/sorrow_io.cpp src/sorrow_fs.cpp
+BUILDTYPE ?= Release
+PYTHON ?= python
 
-all: sorrow
+all: out/Makefile sorrow
 
-sorrow: libv8 $(CCFILES) src/gen/sorrow_natives.h src/sorrow.h
-	$(CC) $(ARCH) $(CCFILES)  $(INCS) $(LIBS) -o sorrow
+.PHONY: sorrow
 
-src/gen/sorrow_natives.h: src/gen/sorrow.js lib/*.js
-	$(JSC) src/gen/sorrow_natives.h src/gen/sorrow.js lib/*.js
+sorrow: config.gypi
+	$(MAKE) -C out BUILDTYPE=Release
+	ln -fs out/Release/sorrow sorrow
 
-src/gen/sorrow.js: src/sorrow.js v8
-	$(JSMIN) src/sorrow.js -o src/gen/sorrow.js
+config.gypi: configure
+	./configure
 
-libv8: v8
-	cd deps/v8 && export GYP_GENERATORS=make && make dependencies && make $(V8ARCH) -j2
-
-v8:
-	svn co http://v8.googlecode.com/svn/trunk@10833 deps/v8 
+out/Makefile: common.gypi deps/v8/build/common.gypi deps/v8/tools/gyp/v8.gyp sorrow.gyp config.gypi
+	tools/sorrow_gyp -f make
 
 clean:
-	rm sorrow src/gen/*.h src/gen/*.js
+	-rm -rf out/Makefile sorrow out/$(BUILDTYPE)/sorrow
+	-find out/ -name '*.o' -o -name '*.a' | xargs rm -rf
+
+distclean:
+	-rm -rf out
+	-rm -f config.gypi
+	-rm -f config.mk

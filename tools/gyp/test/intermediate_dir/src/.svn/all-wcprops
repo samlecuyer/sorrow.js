@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/1102/trunk/test/intermediate_dir/src
+END
+test2.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/1099/trunk/test/intermediate_dir/src/test2.gyp
+END
+script.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/1102/trunk/test/intermediate_dir/src/script.py
+END
+test.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/1099/trunk/test/intermediate_dir/src/test.gyp
+END

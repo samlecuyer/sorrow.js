@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #include "sorrow.h"
-#include "gen/sorrow_natives.h"
+#include "sorrow_natives.h"
 
 namespace sorrow {
 	using namespace v8;
