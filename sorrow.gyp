@@ -12,6 +12,7 @@
 			'lib/fs.js',
 			'lib/io.js',
 			'lib/module.js',
+			'lib/system.js',
 			'lib/test.js',
 		],
 	},

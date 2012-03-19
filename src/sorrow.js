@@ -46,14 +46,14 @@
     };
     
     Lib.wrap = function(script) {
-        return '(function(exports, module, require) { '+script +'\n});';
+        return '(function(exports, module, require, internals) { '+script +'\n});';
     };
     
     Lib.prototype.load = function() {
         var script = Lib._sources[this.id];
         var wrappedScript = Lib.wrap(script);
         var fn = internals.compile(wrappedScript, this.filename);
-        fn.call(this, this.exports, {id: this.id}, Lib.require);
+        fn.call(this, this.exports, {id: this.id}, Lib.require, internals);
         this.loaded = true;
     };
     
