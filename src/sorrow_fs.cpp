@@ -20,11 +20,37 @@ namespace sorrow {
             return;
         }
     }
+	
+	JS_FUNCTN(OpenRaw) {
+		if (args.Length() < 2) return ThrowException(String::New("This method requires 2 parameters"));
+		
+	}
+	
+	JS_FUNCTN(Move) {
+		
+	}
+	
+	JS_FUNCTN(Remove) {
+		HandleScope scope;
+		if (args.Length() != 1) return ThrowException(String::New("This method must take 1 argument"));
+		String::Utf8Value path(args[0]);
+		int rm = remove(*path);
+		if (rm != 0) {
+			return ThrowException(String::New("File could not be removed"));
+		}
+		return Undefined();
+	}
+	
+	JS_FUNCTN(Touch) {
+		
+	}	
     
     void SetupFS(Handle<Object> internals) {
 		HandleScope scope;
         
         internals->SetAccessor(String::New("cwd"), CwdGetter, CwdSetter);
+		
+		SET_METHOD(internals, "remove", Remove)
     }
 	
 } // namespce sorrow

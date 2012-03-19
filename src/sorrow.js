@@ -4,8 +4,6 @@
 
 (function(internals) {
     var global = this;
-    var makeGlobal = function(k, v) { global[k] = v; };
-    makeGlobal('print', internals.print);
         
     function Lib(id) {
         this.id = id;
@@ -48,7 +46,7 @@
     };
     
     Lib.wrap = function(script) {
-        return '(function(exports, module, require) {'+script +'\n});';
+        return '(function(exports, module, require) { '+script +'\n});';
     };
     
     Lib.prototype.load = function() {
@@ -60,9 +58,14 @@
     };
     
     var Module = Lib.require('module').Module;
-    var fs     = Lib.require('fs');
+    var io     = Lib.require('io');
+    var args   = internals.args;
     
-    var prog = internals.arg;
-    Module.runProg(prog);
+    if (args.length < 1) {
+        io.stdout.writeLine('there was some input expected.  try it with a file');
+        return;
+    }
+    
+    Module.runProg(args[0]);
     
 });

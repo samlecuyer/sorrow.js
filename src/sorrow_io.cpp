@@ -227,11 +227,11 @@ namespace sorrow {
         rawStream_ot->SetAccessor(String::New("position"), 
                                   RawStreamPositionGetter, 
                                   RawStreamPositionSetter);
-        rawStream_ot->Set(String::New("close"), FN_OF_TMPLT(RawIOStreamClose));
-        rawStream_ot->Set(String::New("flush"), FN_OF_TMPLT(RawIOStreamFlush));
-        rawStream_ot->Set(String::New("skip"),  FN_OF_TMPLT(RawIOStreamSkip));
-        rawStream_ot->Set(String::New("read"),  FN_OF_TMPLT(RawIOStreamRead));
-        rawStream_ot->Set(String::New("write"), FN_OF_TMPLT(RawIOStreamWrite));
+        SET_METHOD(rawStream_ot, "close", RawIOStreamClose)
+        SET_METHOD(rawStream_ot, "flush", RawIOStreamFlush)
+        SET_METHOD(rawStream_ot, "skip",  RawIOStreamSkip)
+        SET_METHOD(rawStream_ot, "read",  RawIOStreamRead)
+        SET_METHOD(rawStream_ot, "write", RawIOStreamWrite)
         rawStream_ot->SetInternalFieldCount(1);
 		
         rawStream_f = Persistent<Function>::New(rawStream_t->GetFunction());
@@ -241,8 +241,8 @@ namespace sorrow {
         Local<FunctionTemplate> textStream_t = FunctionTemplate::New(TextIOStream);
         Local<ObjectTemplate> textStream_ot = textStream_t->InstanceTemplate();
 		
-        textStream_ot->Set(String::New("readLine"),  FN_OF_TMPLT(TextIOStreamReadLine));
-        textStream_ot->Set(String::New("writeLine"), FN_OF_TMPLT(TextIOStreamWriteLine));
+        SET_METHOD(textStream_ot, "readLine",  TextIOStreamReadLine)
+        SET_METHOD(textStream_ot, "writeLine", TextIOStreamWriteLine)
         
         textStream_f = Persistent<Function>::New(textStream_t->GetFunction());
 		internals->Set(String::New("TextStream"), textStream_f);

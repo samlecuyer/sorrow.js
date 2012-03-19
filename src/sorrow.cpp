@@ -1,4 +1,4 @@
-// copyright 2012 the V8 project authors & sam l'ecuyer
+// copyright 2012 sam l'ecuyer
 #include <v8.h>
 #include <assert.h>
 #include <string.h>
@@ -17,38 +17,6 @@ namespace sorrow {
 	const char* ToCString(const String::Utf8Value& value) {
 		return *value ? *value : "<string conversion failed>";
 	} // ToCString
-    
-	JS_FUNCTN(Print) {
-		bool first = true;
-		for (int i = 0; i < args.Length(); i++) {
-			HandleScope handle_scope;
-			if (first) {
-				first = false;
-			} else {
-				printf(" ");
-			}
-			String::Utf8Value str(args[i]);
-			printf("%s", *str);
-		}
-		printf("\n");
-		fflush(stdout);
-		return Undefined();
-	} // Print
-	
-	JS_FUNCTN(Read) {
-		if (args.Length() != 1) {
-			return ThrowException(String::New("Bad parameters"));
-		}
-		String::Utf8Value file(args[0]);
-		if (*file == NULL) {
-			return ThrowException(String::New("Error loading file"));
-		}
-		Handle<String> source = ReadFile(*file);
-		if (source.IsEmpty()) {
-			return ThrowException(String::New("Error loading file"));
-		}
-		return source;
-	} // Read
 	
 	JS_FUNCTN(Quit) {
 		int exit_code = args[0]->Int32Value();
@@ -59,26 +27,6 @@ namespace sorrow {
 	JS_FUNCTN(Version) {
 		return String::New(V8::GetVersion());
 	} // Version
-	
-	Handle<String> ReadFile(const char* name) {
-		FILE* file = fopen(name, "rb");
-		if (file == NULL) return Handle<String>();
-		
-		fseek(file, 0, SEEK_END);
-		int size = ftell(file);
-		rewind(file);
-		
-		char* chars = new char[size + 1];
-		chars[size] = '\0';
-		for (int i = 0; i < size;) {
-			int read = fread(&chars[i], 1, size - i, file);
-			i += read;
-		}
-		fclose(file);
-		Handle<String> result = String::New(chars, size);
-		delete[] chars;
-		return result;
-	} // ReadFile
 	
 	void ReportException(TryCatch* try_catch) {
 		HandleScope handle_scope;
@@ -116,46 +64,6 @@ namespace sorrow {
 			}
 		}
 	} // ReportException
-	
-	JS_FUNCTN(LoadFile) {
-		for (int i = 0; i < args.Length(); i++) {
-			HandleScope handle_scope;
-			String::Utf8Value file(args[i]);
-			if (*file == NULL) {
-				return ThrowException(String::New("Error loading file"));
-			}
-			Handle<String> source = ReadFile(*file);
-			if (source.IsEmpty()) {
-				return ThrowException(String::New("Error loading file"));
-			}
-			return ExecuteString(source, String::New(*file));
-		}
-		return Undefined();
-	} // LoadFile
-	
-	void RunArgs(int argc, char* argv[]) {
-		V8::SetFlagsFromCommandLine(&argc, argv, true);
-		for (int i = 1; i < argc; i++) {
-			const char* str = argv[i];
-			if (strcmp(str, "-e") == 0 && i + 1 < argc) {
-				// Execute argument given to -e option directly
-				HandleScope handle_scope;
-				Handle<String> file_name = String::New("unnamed");
-				Handle<String> source = String::New(argv[i + 1]);
-				ExecuteString(source, file_name);
-				i++;
-			} else {
-				// Use all other arguments as names of files to load and run.
-				HandleScope handle_scope;
-				Handle<String> file_name = String::New(str);
-				Handle<String> source = ReadFile(str);
-				if (source.IsEmpty()) {
-					printf("Error reading '%s'\n", str);
-				}
-				ExecuteString(source, file_name);
-			}
-		}
-	} // RunArgs
 	
 	Local<Value> ExecuteString(Handle<String> source, Handle<Value> filename) {
 		HandleScope scope;
@@ -212,14 +120,15 @@ namespace sorrow {
 		Local<FunctionTemplate> internals_template = FunctionTemplate::New();
 		internals = Persistent<Object>::New(internals_template->GetFunction()->NewInstance());
 		
-		internals->Set(String::New("print"),   FN_OF_TMPLT(Print));
-		internals->Set(String::New("read"),    FN_OF_TMPLT(Read));
-		internals->Set(String::New("load"),    FN_OF_TMPLT(LoadFile));
-		internals->Set(String::New("quit"),    FN_OF_TMPLT(Quit));
-		internals->Set(String::New("version"), FN_OF_TMPLT(Version));
-        internals->Set(String::New("compile"), FN_OF_TMPLT(CompileScript));
+		SET_METHOD(internals, "quit",    Quit)
+		SET_METHOD(internals, "version", Version)
+        SET_METHOD(internals, "compile", CompileScript)
         
-        internals->Set(String::New("arg"), String::New(argv[1]));
+		Local<Array> lineArgs = Array::New(argc-1);
+		for (int i = 0; i +1 < argc; i++) {
+			lineArgs->Set(Integer::New(i), String::New(argv[i+1]));
+		}
+		internals->Set(String::New("args"), lineArgs);
 		
 		Handle<Object> libsObject = Object::New();
 		LoadNativeLibraries(libsObject);
