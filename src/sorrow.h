@@ -30,6 +30,8 @@ namespace sorrow {
 	void ReportException(TryCatch* handler);
 	void LoadNativeLibraries(Handle<Object> natives);
 	
+    void InitV8Arrays(Handle<Object> target);
+    
     /**
      * sorrow_io.cpp
      */

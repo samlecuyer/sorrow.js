@@ -151,6 +151,7 @@ namespace sorrow {
 			Persistent<Context> highlander = Context::New(); // there can only be one!
 			Context::Scope context_scope(highlander);
 			
+            InitV8Arrays(highlander->Global());
 			Handle<Object> internals = SetupInternals(argc, argv);
 			Load(internals);
 			
