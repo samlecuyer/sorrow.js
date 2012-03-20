@@ -4,3 +4,4 @@ deps/v8
 tools/gyp
 out
 sorrow
+.DS_Store

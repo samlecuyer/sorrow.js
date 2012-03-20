@@ -20,6 +20,7 @@
 #define JS_FUNCTN(name) Handle<Value> name(const Arguments& args)
 #define FN_OF_TMPLT(name) FunctionTemplate::New(name)->GetFunction()
 #define SET_METHOD(obj,name,method) obj->Set(String::New(name), FunctionTemplate::New(method)->GetFunction());
+#define EXCEPTION(message) ThrowException(String::New(message));
 
 namespace sorrow {
 	using namespace v8;

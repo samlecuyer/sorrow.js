@@ -91,6 +91,17 @@ namespace sorrow {
 		Local<Value> result = ExecuteString(script, source);
 		return scope.Close(result);
 	} // CompileScript
+    
+    Handle<Value> EnvGetter(Local<String> name, const AccessorInfo &info) {
+        HandleScope scope;
+        String::Utf8Value nameVal(name);
+        char *env = getenv(*nameVal);
+        if (env == NULL) {
+            return Undefined();
+        }
+        Local<String> ret = String::New(env);
+        return scope.Close(ret);
+    }
 	
 	void Load(Handle<Object> internals) {
 		TryCatch tryCatch;
@@ -133,6 +144,10 @@ namespace sorrow {
 		Handle<Object> libsObject = Object::New();
 		LoadNativeLibraries(libsObject);
 		internals->Set(String::New("stdlib"), libsObject);
+        
+        Handle<ObjectTemplate> env = ObjectTemplate::New();
+        env->SetNamedPropertyHandler(EnvGetter);
+        internals->Set(String::New("env"), env->NewInstance());
 		
 		SetupBinaryTypes(internals);
 		SetupIOStreams(internals);

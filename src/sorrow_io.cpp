@@ -257,6 +257,11 @@ namespace sorrow {
         Local<Object> rawOut = rawStream_f->NewInstance(1, rawOutArgs);
         Local<Value> stdoutArgs[2] = { rawOut, Object::New() };
 		internals->Set(String::New("stdout"), textStream_f->NewInstance(2, stdoutArgs));
+        
+        Local<Value> rawErrArgs[1] = { External::New(stderr) };
+        Local<Object> rawErr = rawStream_f->NewInstance(1, rawErrArgs);
+        Local<Value> stderrArgs[2] = { rawErr, Object::New() };
+		internals->Set(String::New("stderr"), textStream_f->NewInstance(2, stderrArgs));
 	}
 	
 }
