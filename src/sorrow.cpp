@@ -148,6 +148,8 @@ namespace sorrow {
         Handle<ObjectTemplate> env = ObjectTemplate::New();
         env->SetNamedPropertyHandler(EnvGetter);
         internals->Set(String::New("env"), env->NewInstance());
+        
+        internals->Set(String::New("global"), Context::GetCurrent()->Global());
 		
 		SetupBinaryTypes(internals);
 		SetupIOStreams(internals);

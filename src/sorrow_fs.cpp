@@ -4,6 +4,9 @@
 
 #include <utime.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "sorrow.h"
 
@@ -129,14 +132,32 @@ namespace sorrow {
      */
     
 	JS_FUNCTN(Owner) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+        struct passwd *pwd_buf;
+		status = stat(*path, &buffer);
+        if (status != 0) return Undefined();
+        pwd_buf = getpwuid(buffer.st_uid);
+        return String::New(pwd_buf->pw_name);
 	}
     JS_FUNCTN(ChangeOwner) {
 		return EXCEPTION("Unimplemented")
 	}
 	
 	JS_FUNCTN(Group) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+        struct group *grp_buf;
+		status = stat(*path, &buffer);
+        if (status != 0) return Undefined();
+        grp_buf = getgrgid(buffer.st_gid);
+        return String::New(grp_buf->gr_name);
 	}
     JS_FUNCTN(ChangeGroup) {
 		return EXCEPTION("Unimplemented")
@@ -172,31 +193,80 @@ namespace sorrow {
      */
     
 	JS_FUNCTN(Exists) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+		status = stat(*path, &buffer);
+        return Boolean::New(status == 0);
 	}
 	
 	JS_FUNCTN(IsFile) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+		status = stat(*path, &buffer);
+        if (status != 0) return False();
+        return Boolean::New(S_ISREG(buffer.st_mode));
 	}
     
     JS_FUNCTN(IsDirectory) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+		status = stat(*path, &buffer);
+        if (status != 0) return False();
+        return Boolean::New(S_ISDIR(buffer.st_mode));
 	}
     
     JS_FUNCTN(IsLink) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+		status = lstat(*path, &buffer);
+        if (status != 0) return False();
+        return Boolean::New(S_ISLNK(buffer.st_mode));
 	}
     
     JS_FUNCTN(IsReadable) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        int status;
+		status = access(*path, R_OK);
+        return Boolean::New(status == 0);
 	}
     
     JS_FUNCTN(IsWriteable) {
-		return EXCEPTION("Unimplemented")
+        HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+		int status;
+		status = access(*path, W_OK);
+        return Boolean::New(status == 0);
 	}
     
     JS_FUNCTN(Same) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+        String::Utf8Value path1(args[0]->ToString());
+        String::Utf8Value path2(args[1]->ToString());
+        struct stat buffer1;
+        int         status1;
+        struct stat buffer2;
+        int         status2;
+		status1 = stat(*path1, &buffer1);
+        if (status1 != 0) return False();
+        status2 = stat(*path2, &buffer2);
+        if (status2 != 0) return False();
+        return Boolean::New(buffer1.st_ino == buffer2.st_ino);
 	}
     
     JS_FUNCTN(SameFilesystem) {
@@ -209,11 +279,26 @@ namespace sorrow {
      */
     
 	JS_FUNCTN(Size) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+		status = stat(*path, &buffer);
+        if (status != 0) return EXCEPTION("Could not obtain size");
+        return Number::New(buffer.st_size);
 	}
 	
 	JS_FUNCTN(LastModified) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+        int         status;
+		status = stat(*path, &buffer);
+        if (status != 0) return EXCEPTION("Could not obtain last modified date");
+        // don't count on portability :(
+        return Date::New(static_cast<double>(buffer.st_mtime)*1000);
 	}
     
     
@@ -222,7 +307,35 @@ namespace sorrow {
      */
     
 	JS_FUNCTN(List) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+		DIR *dir;
+        struct dirent *listing;
+		dir = opendir(*path);
+        if (dir == NULL) return EXCEPTION("Could not read directory");
+        // seekdir doesn't seem to have an end like fseek does, so 
+        // we have to iterate it twice.  sub-optimal.
+        int count = 0;
+        while (dir) {
+            if (readdir(dir) != NULL) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        rewinddir(dir);
+        Local<Array> list = Array::New(count);
+        count = 0;
+        while (dir) {
+            if ((listing = readdir(dir)) != NULL) {
+                list->Set(Integer::New(count++), String::New(listing->d_name));
+            } else {
+                closedir(dir);
+                break;
+            }
+        }
+        return scope.Close(list);
 	}
 	
 	JS_FUNCTN(Iterate) {
@@ -262,6 +375,20 @@ namespace sorrow {
         SET_METHOD(fsObj, "chgroup",    ChangeGroup)
         SET_METHOD(fsObj, "perm",       Permissions)
         SET_METHOD(fsObj, "chperm",     ChangePermissions)
+        
+        SET_METHOD(fsObj, "exists",     Exists)
+        SET_METHOD(fsObj, "isfile",     IsFile)
+        SET_METHOD(fsObj, "isdir",      IsDirectory)
+        SET_METHOD(fsObj, "islink",     IsLink)
+        SET_METHOD(fsObj, "isreadable", IsReadable)
+        SET_METHOD(fsObj, "iswriteable",IsWriteable)
+        SET_METHOD(fsObj, "same",       Same)
+        SET_METHOD(fsObj, "samefs",     SameFilesystem)
+        
+        SET_METHOD(fsObj, "size",       Size)
+        SET_METHOD(fsObj, "lastmod",    LastModified)
+        
+        SET_METHOD(fsObj, "list",       List)
         
         internals->Set(String::New("fs"), fsObj);
     }
