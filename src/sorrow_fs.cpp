@@ -136,9 +136,8 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
         struct passwd *pwd_buf;
-		status = stat(*path, &buffer);
+		int status = stat(*path, &buffer);
         if (status != 0) return Undefined();
         pwd_buf = getpwuid(buffer.st_uid);
         return String::New(pwd_buf->pw_name);
@@ -152,9 +151,8 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
         struct group *grp_buf;
-		status = stat(*path, &buffer);
+		int status = stat(*path, &buffer);
         if (status != 0) return Undefined();
         grp_buf = getgrgid(buffer.st_gid);
         return String::New(grp_buf->gr_name);
@@ -176,15 +174,38 @@ namespace sorrow {
      */
     
 	JS_FUNCTN(SymbolicLink) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+        String::Utf8Value path1(args[0]->ToString());
+        String::Utf8Value path2(args[1]->ToString());
+        int status = symlink(*path1, *path2);
+        if (status != 0) return EXCEPTION("Could not create symlink")
+        return Undefined();
 	}
 	
 	JS_FUNCTN(HardLink) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+        String::Utf8Value path1(args[0]->ToString());
+        String::Utf8Value path2(args[1]->ToString());
+        int status = link(*path1, *path2);
+        if (status != 0) return EXCEPTION("Could not create link")
+        return Undefined();
 	}
     
     JS_FUNCTN(ReadLink) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 arguments")
+        String::Utf8Value path(args[0]->ToString());
+        char *buffer = new char[PATH_MAX];
+		int read = readlink(*path, buffer, PATH_MAX);
+        if (read == -1) {
+            delete buffer;
+            return EXCEPTION("Could not create symlink")
+        }
+        Local<String> target = String::New(buffer, read);
+        delete buffer;
+        return scope.Close(target);
 	}
     
     
@@ -197,8 +218,7 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
-		status = stat(*path, &buffer);
+		int status = stat(*path, &buffer);
         return Boolean::New(status == 0);
 	}
 	
@@ -207,8 +227,7 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
-		status = stat(*path, &buffer);
+		int status = stat(*path, &buffer);
         if (status != 0) return False();
         return Boolean::New(S_ISREG(buffer.st_mode));
 	}
@@ -218,8 +237,7 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
-		status = stat(*path, &buffer);
+		int status = stat(*path, &buffer);
         if (status != 0) return False();
         return Boolean::New(S_ISDIR(buffer.st_mode));
 	}
@@ -229,8 +247,7 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
-		status = lstat(*path, &buffer);
+		int status = lstat(*path, &buffer);
         if (status != 0) return False();
         return Boolean::New(S_ISLNK(buffer.st_mode));
 	}
@@ -239,8 +256,7 @@ namespace sorrow {
 		HandleScope scope;
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
-        int status;
-		status = access(*path, R_OK);
+        int status = access(*path, R_OK);
         return Boolean::New(status == 0);
 	}
     
@@ -248,8 +264,7 @@ namespace sorrow {
         HandleScope scope;
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
-		int status;
-		status = access(*path, W_OK);
+		int status = access(*path, W_OK);
         return Boolean::New(status == 0);
 	}
     
@@ -283,8 +298,7 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
-		status = stat(*path, &buffer);
+        int status = stat(*path, &buffer);
         if (status != 0) return EXCEPTION("Could not obtain size");
         return Number::New(buffer.st_size);
 	}
@@ -294,8 +308,7 @@ namespace sorrow {
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
-        int         status;
-		status = stat(*path, &buffer);
+        int status = stat(*path, &buffer);
         if (status != 0) return EXCEPTION("Could not obtain last modified date");
         // don't count on portability :(
         return Date::New(static_cast<double>(buffer.st_mtime)*1000);
@@ -375,6 +388,10 @@ namespace sorrow {
         SET_METHOD(fsObj, "chgroup",    ChangeGroup)
         SET_METHOD(fsObj, "perm",       Permissions)
         SET_METHOD(fsObj, "chperm",     ChangePermissions)
+        
+        SET_METHOD(fsObj, "slink",      SymbolicLink)
+        SET_METHOD(fsObj, "hlink",      HardLink)
+        SET_METHOD(fsObj, "rlink",      ReadLink)
         
         SET_METHOD(fsObj, "exists",     Exists)
         SET_METHOD(fsObj, "isfile",     IsFile)
