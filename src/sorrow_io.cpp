@@ -35,7 +35,7 @@ namespace sorrow {
 			// ByteString([buffer], size)
             file = (FILE*)External::Unwrap(args[0]);
         } else {
-            return ThrowException(String::New("This is not a valid constructor call"));
+            return EXCEPTION("This is not a valid constructor call")
         }
 		Persistent<Object> persistent_stream = Persistent<Object>::New(rawStream);
 		persistent_stream.MakeWeak(file, ExternalWeakIOCallback);
@@ -59,7 +59,7 @@ namespace sorrow {
         fseek(file, pos, SEEK_SET);
         if (ferror(file)) {
             clearerr(file);
-            ThrowException(String::New("Could not set stream position"));
+            EXCEPTION("Could not set stream position")
             return;
         }
     }
@@ -70,7 +70,7 @@ namespace sorrow {
         fclose(file);
         if (ferror(file)) {
             clearerr(file);
-            return ThrowException(String::New("Could not close stream"));
+            return EXCEPTION("Could not close stream")
         }
         return Undefined();
 	}	
@@ -81,7 +81,7 @@ namespace sorrow {
         fflush(file);
         if (ferror(file)) {
             clearerr(file);
-            return ThrowException(String::New("Could not flush stream"));
+            return EXCEPTION("Could not flush stream")
         }
         return Undefined();
 	}	
@@ -93,7 +93,7 @@ namespace sorrow {
         fseek(file, dist, SEEK_CUR);
         if (ferror(file)) {
             clearerr(file);
-            return ThrowException(String::New("Could not skip stream"));
+            return EXCEPTION("Could not skip stream")
         }
         return Undefined();
 	}	
@@ -120,17 +120,17 @@ namespace sorrow {
             } else if (args[0]->IsNumber()) {
                 n = args[0]->IntegerValue();
             } else {
-                return ThrowException(String::New("Not a valid invocation"));
+                return EXCEPTION("Not a valid invocation")
             }
             buffer = new uint8_t[n];
         } else {
-            return ThrowException(String::New("Not a valid invocation"));
+            return EXCEPTION("Not a valid invocation")
         }
         int readBytes = fread(buffer, sizeof(uint8_t), n, file);
         if (ferror(file)) {
             clearerr(file);
             delete[] buffer;
-            return ThrowException(String::New("Stream is in a bad state"));
+            return EXCEPTION("Stream is in a bad state")
         }
 		Local<Value> bsArgs[2] = { External::New(buffer), Integer::New(readBytes) };
 		Local<Value> bs = byteString_f->NewInstance(2, bsArgs);
@@ -146,17 +146,17 @@ namespace sorrow {
         int size;
         
         if (args.Length() == 0) {
-            return ThrowException(String::New("This requires at least one parameter"));
+            return EXCEPTION("This requires at least one parameter")
         } else if (args.Length() == 1) {
             size = args[0]->ToObject()->Get(String::New("length"))->IntegerValue();
             data = args[0]->ToObject()->GetPointerFromInternalField(0);
         } else {
-            return ThrowException(String::New("Not currently supported."));
+            return EXCEPTION("Not currently supported.")
         }
         int wrote = fwrite(data, sizeof(uint8_t), size, file);
         if (ferror(file) || wrote != size) {
             clearerr(file);
-            return ThrowException(String::New("Could not write to stream"));
+            return EXCEPTION("Could not write to stream")
         }
         return Integer::New(wrote);
 	}
@@ -171,7 +171,7 @@ namespace sorrow {
             textStream->Set(String::New(isRawStreamPropName), True(), ReadOnly);
             textStream->Set(String::New("raw"), args[0]->ToObject(), ReadOnly);
         } else {
-            return ThrowException(String::New("This is not a valid constructor call"));
+            return EXCEPTION("This is not a valid constructor call")
         }
 		return textStream;
 	}
@@ -184,7 +184,7 @@ namespace sorrow {
         int n = 4096;
         char *buffer;
         if (feof(file)) {
-            return ThrowException(String::New("EOF"));
+            return EXCEPTION("EOF")
         }
         buffer = new char[n+1];
         buffer[n] = '\0';
@@ -212,7 +212,7 @@ namespace sorrow {
         }
         if (ferror(file)) {
             clearerr(file);
-            return ThrowException(String::New("Error writing line"));
+            return EXCEPTION("Error writing line")
         }
         return Undefined();
     }

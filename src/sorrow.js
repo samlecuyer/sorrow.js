@@ -57,6 +57,8 @@
         this.loaded = true;
     };
     
+    internals.fire = Lib.require('event').fire;
+    
     var Module = Lib.require('module').Module;
     var io     = Lib.require('io');
     var args   = internals.args;

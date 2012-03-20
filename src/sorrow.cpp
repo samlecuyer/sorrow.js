@@ -17,6 +17,22 @@ namespace sorrow {
 	const char* ToCString(const String::Utf8Value& value) {
 		return *value ? *value : "<string conversion failed>";
 	} // ToCString
+    
+    void FireExit() {
+        HandleScope scope;
+        TryCatch tryCatch;
+		Local<Value> func = internals->Get(String::New("fire"));
+		
+		if (tryCatch.HasCaught() || func == Undefined()) {
+			return;
+		}
+		assert(func->IsFunction());
+		Local<Function> f = Local<Function>::Cast(func);
+        
+		Local<Object> global = Context::GetCurrent()->Global();
+		Local<Value> args[1] = { String::New("exit") };
+		f->Call(global, 1, args);
+    }
 	
 	JS_FUNCTN(Quit) {
 		int exit_code = args[0]->Int32Value();
@@ -131,8 +147,9 @@ namespace sorrow {
 		Local<FunctionTemplate> internals_template = FunctionTemplate::New();
 		internals = Persistent<Object>::New(internals_template->GetFunction()->NewInstance());
 		
-		SET_METHOD(internals, "quit",    Quit)
-		SET_METHOD(internals, "version", Version)
+        Local<Object> global = Context::GetCurrent()->Global();
+		SET_METHOD(global, "quit",    Quit)
+		SET_METHOD(global, "version", Version)
         SET_METHOD(internals, "compile", CompileScript)
         
 		Local<Array> lineArgs = Array::New(argc-1);
@@ -149,7 +166,7 @@ namespace sorrow {
         env->SetNamedPropertyHandler(EnvGetter);
         internals->Set(String::New("env"), env->NewInstance());
         
-        internals->Set(String::New("global"), Context::GetCurrent()->Global());
+        internals->Set(String::New("global"), global);
 		
 		SetupBinaryTypes(internals);
 		SetupIOStreams(internals);
@@ -170,10 +187,10 @@ namespace sorrow {
 			
             InitV8Arrays(highlander->Global());
 			Handle<Object> internals = SetupInternals(argc, argv);
+            
 			Load(internals);
-			
-			//RunArgs(argc, argv);
-			
+			FireExit();
+            
 			highlander.Dispose();
 		}
 		V8::Dispose();

@@ -9,6 +9,7 @@
 			'lib/assert.js',
 			'lib/binary.js',
 			'lib/console.js',
+			'lib/event.js',
 			'lib/fs.js',
 			'lib/io.js',
 			'lib/module.js',
