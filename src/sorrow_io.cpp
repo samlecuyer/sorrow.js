@@ -205,8 +205,10 @@ namespace sorrow {
         FILE *file = (FILE*)args.This()->Get(String::New("raw"))
                 ->ToObject()->GetPointerFromInternalField(0);
         NULL_STREAM_EXCEPTION(file, "Could not read from stream")
-        String::Utf8Value val(args[0]);
-        fwrite(*val, sizeof(char), val.length(), file);
+        if (args.Length() >= 1) {
+            String::Utf8Value val(args[0]->ToString());
+            fwrite(*val, sizeof(char), val.length(), file);
+        }
         if (!args[1]->IsTrue()) {
             fwrite("\n", 1, 1, file);
         }
