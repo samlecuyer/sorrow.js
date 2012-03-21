@@ -9,3 +9,5 @@ A v8-based CommonJS implementation, currently under heavy development.  The curr
 ## Building
 sorrow depends on [v8](http://code.google.com/p/v8/) and [gyp](http://code.google.com/p/gyp/) to build, which require svn and Python.  These can both be pulled into your local copy by running `make dependencies`.  After that, sorrow can be built by running `make`.
 
+## Legal
+sorrow is licensed under the BSD license.  This is available in the LICENSE file.
