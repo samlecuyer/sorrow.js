@@ -82,11 +82,25 @@ namespace sorrow {
      */
     
 	JS_FUNCTN(MakeDirectory) {
-		return EXCEPTION("Unimplemented")
+        HandleScope scope;
+		if (args.Length() < 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        mode_t mod = 0777;
+        if (args.Length() == 2 && args[1]->IsUint32()) {
+            mod = args[1]->Uint32Value();
+        }
+        int status = mkdir(*path, mod);
+        if (status != 0) return EXCEPTION("Could not create directory");
+        return Undefined();
 	}
 	
 	JS_FUNCTN(RemoveDirectory) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+		int status = rmdir(*path);
+        if (status != 0) return EXCEPTION("Could not create directory");
+        return Undefined();
 	}
 	
 	
@@ -143,7 +157,17 @@ namespace sorrow {
         return String::New(pwd_buf->pw_name);
 	}
     JS_FUNCTN(ChangeOwner) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+        String::Utf8Value path(args[0]->ToString());
+        String::Utf8Value user(args[1]->ToString());
+        struct stat buffer;
+		int status = stat(*path, &buffer);
+        if (status != 0) return EXCEPTION("Could not change owner");
+        struct passwd *pwd_buf = getpwnam(*user);
+        status = chown(*path, pwd_buf->pw_uid, buffer.st_gid);
+        if (status != 0) return EXCEPTION("Could not change owner");
+        return Undefined();
 	}
 	
 	JS_FUNCTN(Group) {
@@ -158,14 +182,37 @@ namespace sorrow {
         return String::New(grp_buf->gr_name);
 	}
     JS_FUNCTN(ChangeGroup) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+        String::Utf8Value path(args[0]->ToString());
+        String::Utf8Value name(args[1]->ToString());
+        struct stat buffer;
+		int status = stat(*path, &buffer);
+        if (status != 0) return EXCEPTION("Could not change group");
+        struct group *grp_buf = getgrnam(*name);
+        status = chown(*path, buffer.st_uid, grp_buf->gr_gid);
+        if (status != 0) return EXCEPTION("Could not change group");
+        return Undefined();
 	}
     
     JS_FUNCTN(Permissions) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+        String::Utf8Value path(args[0]->ToString());
+        struct stat buffer;
+		int status = stat(*path, &buffer);
+        if (status != 0) return Undefined();
+        return Integer::New(buffer.st_mode);
 	}
     JS_FUNCTN(ChangePermissions) {
-		return EXCEPTION("Unimplemented")
+		HandleScope scope;
+		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+        String::Utf8Value path(args[0]->ToString());
+        mode_t mod = args[1]->Uint32Value();
+		int status = chmod(*path, mod);
+        if (status != 0) return EXCEPTION("Could not change permissions");
+        return Undefined();
+
 	}
     
     
