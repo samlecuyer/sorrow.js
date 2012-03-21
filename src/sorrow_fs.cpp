@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fcntl.h>
 
 #include "sorrow.h"
 
@@ -45,7 +46,6 @@ namespace sorrow {
 		return Undefined();
 	}
 	
-    // TODO: This does not work if the file doesn't exist
 	JS_FUNCTN(Touch) {
         HandleScope scope;
         if (args.Length() < 1) {
@@ -54,23 +54,28 @@ namespace sorrow {
         if (args.Length() == 2 && !args[1]->IsDate()) {
             return EXCEPTION("Second arg must be a Date")
         } 
-        char *path;
-        struct utimbuf ubuf;
         
+        String::Utf8Value path(args[0]->ToString());
+        struct utimbuf ubuf;
         int touch;
-        String::Utf8Value pathString(args[0]->ToString());
-        path = *pathString;
+        
+        struct stat buffer;
+        int status = stat(*path, &buffer);
+        if (status != 0) {
+            status = creat(*path, 0666);
+            if (status != 0) return EXCEPTION("Could not touch file")
+        }
         
         if (args.Length() == 1) {
-            touch = utime(path, NULL);
-        } else  {
+            touch = utime(*path, NULL);
+        } else  if (args.Length() == 2) {
             Local<Date> date = Date::Cast(*args[1]);
             // I wouldn't count on this being portable
             uint64_t modtime = static_cast<uint64_t>(date->NumberValue());
             ubuf.actime = ubuf.modtime = modtime/1000;
-            touch = utime(path, &ubuf); 
+            touch = utime(*path, &ubuf); 
         }
-		if (touch != 0) {
+        if (touch != 0) {
             return EXCEPTION("File could not be touched")
         }
         return Undefined();
