@@ -13,6 +13,10 @@ namespace sorrow {
     Persistent<FunctionTemplate> byteString_t;
     Persistent<FunctionTemplate> byteArray_t;
     
+    /** 
+     * Binary functions to be shared between all Binary subclasses
+     */
+    
 	JS_FUNCTN(BinaryFunction) {
 		return ThrowException(JS_STR("Binary is non-instantiable"));
 	}
@@ -30,31 +34,16 @@ namespace sorrow {
         return BYTES_FROM_BIN(args.This())->toArray();
     }
     
-    JS_FUNCTN(ByteStringCodeAt) {
-        HandleScope scope;
-        Local<Object> byteString = args.This();
+    
+    JS_FUNCTN(BinaryCodeAt) {
         uint64_t index = args[0]->IntegerValue();
         uint64_t code = BYTES_FROM_BIN(args.This())->getByteAt(index);
         return Number::New(code);
     }
-
     
-    Handle<Value> ByteStringIndexedGetter(uint32_t index, const AccessorInfo &info) {
-        HandleScope scope;
-        uint8_t byte[1] = { BYTES_FROM_BIN(info.This())->getByteAt(index) };
-        Bytes *bytes = new Bytes(1, byte);
-		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
-		Local<Value> bs = byteString->NewInstance(1, bsArgs);
-        
-        return scope.Close(bs);
-    }
-    
-    JS_FUNCTN(ByteStringDecodeToString) {
-        HandleScope scope;
-        Bytes *bytes = BYTES_FROM_BIN(args.This());
-        return String::New((const char*)bytes->getBytes(), bytes->getLength());
-    }
-
+    /** 
+     * ByteString functions
+     */
     
     JS_FUNCTN(ByteString) {
         HandleScope scope;
@@ -100,23 +89,27 @@ namespace sorrow {
 		string->SetPointerInInternalField(0, bytes);
 		return string;
     }
-	
-    Handle<Value> ByteArrayIndexedGetter(uint32_t index, const AccessorInfo &info) {
-        assert(index >= 0 && index < BYTES_FROM_BIN(info.This())->getLength());
-        return Integer::New(BYTES_FROM_BIN(info.This())->getByteAt(index));
-    }
-    Handle< Value >ByteArrayIndexedSetter(uint32_t index, Local< Value > value, const AccessorInfo &info) {
-        uint32_t val = value->Uint32Value();
-        if (!IS_BYTE(val)) {
-            EXCEPTION("must be a byte value")
-        }
-        BYTES_FROM_BIN(info.This())->setByteAt(index, val);
-        return Undefined();
+    
+    Handle<Value> ByteStringIndexedGetter(uint32_t index, const AccessorInfo &info) {
+        HandleScope scope;
+        uint8_t byte[1] = { BYTES_FROM_BIN(info.This())->getByteAt(index) };
+        Bytes *bytes = new Bytes(1, byte);
+		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
+		Local<Value> bs = byteString->NewInstance(1, bsArgs);
+        
+        return scope.Close(bs);
     }
     
-    JS_SETTER(ByteArrayLengthSetter) {
-        BYTES_FROM_BIN(info.This())->resize(value->Uint32Value(), true);
+    JS_FUNCTN(ByteStringDecodeToString) {
+        HandleScope scope;
+        Bytes *bytes = BYTES_FROM_BIN(args.This());
+        return String::New((const char*)bytes->getBytes(), bytes->getLength());
     }
+    
+    
+    /** 
+     * ByteArray functions
+     */
     
 	JS_FUNCTN(ByteArray) {
         HandleScope scope;
@@ -165,7 +158,29 @@ namespace sorrow {
 		string->SetPointerInInternalField(0, bytes);
 		return string;
 	}	
+    
+    Handle<Value> ByteArrayIndexedGetter(uint32_t index, const AccessorInfo &info) {
+        assert(index >= 0 && index < BYTES_FROM_BIN(info.This())->getLength());
+        return Integer::New(BYTES_FROM_BIN(info.This())->getByteAt(index));
+    }
+    Handle<Value> ByteArrayIndexedSetter(uint32_t index, Local< Value > value, const AccessorInfo &info) {
+        uint32_t val = value->Uint32Value();
+        if (!IS_BYTE(val)) {
+            EXCEPTION("must be a byte value")
+        }
+        BYTES_FROM_BIN(info.This())->setByteAt(index, val);
+        return Undefined();
+    }
+    
+    JS_SETTER(ByteArrayLengthSetter) {
+        BYTES_FROM_BIN(info.This())->resize(value->Uint32Value(), true);
+    }
 	
+    
+    /** 
+     * Initialization function to assemble the binary types
+     */
+    
     namespace BinaryTypes {
 	void Initialize(Handle<Object> internals) {
 		HandleScope scope;
@@ -174,6 +189,7 @@ namespace sorrow {
 		Local<FunctionTemplate> binary_t = FunctionTemplate::New(BinaryFunction);
         Local<ObjectTemplate> binary_ot = binary_t->PrototypeTemplate();
         SET_METHOD(binary_ot, "toArray", BinaryToArray);
+        SET_METHOD(binary_ot, "codeAt", BinaryCodeAt)
 		internals->Set(JS_STR("Binary"), binary_t->GetFunction());
 		
         // function ByteArray
@@ -197,7 +213,6 @@ namespace sorrow {
         
         byteString_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter);
         byteString_ot->SetIndexedPropertyHandler(ByteStringIndexedGetter);
-        SET_METHOD(byteString_ot, "codeAt", ByteStringCodeAt)
         SET_METHOD(byteString_ot, "decodeToString", ByteStringDecodeToString)
         byteString_ot->SetInternalFieldCount(1);
 		
