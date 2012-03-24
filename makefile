@@ -5,6 +5,9 @@ all: out/Makefile sorrow
 
 .PHONY: sorrow
 
+test: all
+	./sorrow test/driver.js
+
 sorrow: config.gypi
 	$(MAKE) -C out BUILDTYPE=Release
 	ln -fs out/Release/sorrow sorrow

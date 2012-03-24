@@ -3,6 +3,7 @@
  */
 
 #include "sorrow.h"
+#include "sorrow_bytes.h"
 
 namespace sorrow {
 	using namespace v8;
@@ -105,7 +106,7 @@ namespace sorrow {
         int n;
         uint8_t *buffer;
         if (feof(file)) {
-            Local<Value> bs = byteString_f->NewInstance();
+            Local<Value> bs = byteString->NewInstance();
             return scope.Close(bs);
         }
         if (args.Length() == 0) {
@@ -132,8 +133,9 @@ namespace sorrow {
             delete[] buffer;
             return EXCEPTION("Stream is in a bad state")
         }
-		Local<Value> bsArgs[2] = { External::New(buffer), Integer::New(readBytes) };
-		Local<Value> bs = byteString_f->NewInstance(2, bsArgs);
+        Bytes *bytes = new Bytes(readBytes, buffer);
+		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
+		Local<Value> bs = byteString->NewInstance(1, bsArgs);
         delete[] buffer;
         return scope.Close(bs);
 	}
@@ -148,8 +150,9 @@ namespace sorrow {
         if (args.Length() == 0) {
             return EXCEPTION("This requires at least one parameter")
         } else if (args.Length() == 1) {
-            size = args[0]->ToObject()->Get(String::New("length"))->IntegerValue();
-            data = args[0]->ToObject()->GetPointerFromInternalField(0);
+            Bytes *bytes = BYTES_FROM_BIN(args[0]->ToObject());
+            data = bytes->getBytes();
+            size = bytes->getLength();
         } else {
             return EXCEPTION("Not currently supported.")
         }
@@ -178,7 +181,7 @@ namespace sorrow {
     
     JS_FUNCTN(TextIOStreamReadLine) {
         HandleScope scope;
-        FILE *file = (FILE*)args.This()->Get(String::New("raw"))
+        FILE *file = (FILE*)args.This()->Get(JS_STR("raw"))
                         ->ToObject()->GetPointerFromInternalField(0);
         NULL_STREAM_EXCEPTION(file, "Could not read from stream")
         int n = 4096;
@@ -219,7 +222,8 @@ namespace sorrow {
         return Undefined();
     }
 	
-	void SetupIOStreams(Handle<Object> internals) {
+    namespace IOStreams {
+	void Initialize(Handle<Object> internals) {
 		HandleScope scope;
 		
         // Create RawStream type
@@ -265,5 +269,6 @@ namespace sorrow {
         Local<Value> stderrArgs[2] = { rawErr, Object::New() };
 		internals->Set(String::New("stderr"), textStream_f->NewInstance(2, stderrArgs));
 	}
+    }
 	
 }

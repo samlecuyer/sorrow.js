@@ -420,8 +420,8 @@ namespace sorrow {
 	}
     
     
-        
-    void SetupFS(Handle<Object> internals) {
+    namespace Filesystem {    
+    void Initialize(Handle<Object> internals) {
 		HandleScope scope;
         Local<Object> fsObj = Object::New();
         
@@ -460,6 +460,7 @@ namespace sorrow {
         SET_METHOD(fsObj, "list",       List)
         
         internals->Set(String::New("fs"), fsObj);
+    }
     }
 	
 } // namespce sorrow

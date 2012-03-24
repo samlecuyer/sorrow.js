@@ -1,0 +1,79 @@
+#include "sorrow.h"
+#include "sorrow_bytes.h"
+
+namespace sorrow {
+    using namespace v8;
+
+    Bytes::Bytes(): 
+        len(0), bytes(NULL) {}
+
+    Bytes::Bytes(size_t l): 
+        len(0), bytes(NULL) {
+        resize(l, true);
+    }
+    
+    Bytes::Bytes(size_t l, uint8_t *data): 
+        len(0), bytes(NULL) {
+            //printf("constructor: %s", (char*)data);
+            resize(l, false);
+            memcpy(this->bytes, data, l);
+    }
+    
+    Bytes::Bytes(Bytes *b): 
+        len(0), bytes(NULL) {
+            resize(b->getLength(), false);
+            memcpy(this->bytes, b->getBytes(), this->len);
+    }
+    
+    Bytes::Bytes(Handle<Array> array): 
+        len(0), bytes(NULL) {
+            resize(array->Length(), false);
+            for (int i = 0; i < array->Length(); i++) {
+                uint32_t val = array->Get(i)->IntegerValue();
+                if (!IS_BYTE(val)) throw "NonByte";
+                this->setByteAt(i, val);
+            }
+    }
+
+    Bytes::~Bytes() {
+        free(this->bytes);
+    }
+    
+    uint8_t *Bytes::getBytes() {
+        return this->bytes;
+    }
+
+    size_t Bytes::getLength() {
+        return this->len;
+    }
+
+    uint8_t Bytes::getByteAt(size_t i) {
+        return this->bytes[i];
+    }
+
+    void Bytes::setByteAt(size_t i, uint8_t b) {
+        this->bytes[i] = b;
+    }
+
+    void Bytes::resize(size_t nl, bool zero) {
+        if (!nl) {
+            free(this->bytes);
+            this->bytes = NULL;
+        } else {
+            this->bytes = (uint8_t*)realloc(this->bytes, nl);
+            if (zero && nl > this->len) { 
+                memset(this->bytes + this->len, 0, nl-this->len);
+            }
+        }
+        this->len = nl;
+    }
+    
+    Handle<Array>Bytes::toArray() {
+        HandleScope scope;
+        Handle<Array> array = Array::New(this->len);
+        for (int i = 0; i < this->len; i++) {
+            uint32_t val = array->Set(i, Integer::New(this->getByteAt(i)));
+        }
+        return scope.Close(array);
+    }
+}

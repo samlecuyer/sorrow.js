@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #define NULL_STREAM_EXCEPTION(file, message) \
     if (file == NULL) { \
@@ -18,9 +19,13 @@
 #define JS_SETTER(name) void name(Local<String> property, Local<Value> value, const AccessorInfo& info)
 #define JS_GETTER(name) Handle<Value> name(Local<String> property, const AccessorInfo& info)
 #define JS_FUNCTN(name) Handle<Value> name(const Arguments& args)
+#define JS_STR(lit)     String::New(lit)
 #define FN_OF_TMPLT(name) FunctionTemplate::New(name)->GetFunction()
-#define SET_METHOD(obj,name,method) obj->Set(String::New(name), FunctionTemplate::New(method)->GetFunction());
-#define EXCEPTION(message) ThrowException(String::New(message));
+#define SET_METHOD(obj,name,method) obj->Set(JS_STR(name), FN_OF_TMPLT(method));
+#define EXCEPTION(message) ThrowException(JS_STR(message));
+
+#define IS_BINARY(obj) (byteString_t->HasInstance(obj) || byteArray_t->HasInstance(obj))
+#define BYTES_FROM_BIN(obj) reinterpret_cast<Bytes*>(obj->GetPointerFromInternalField(0))
 
 namespace sorrow {
 	using namespace v8;
@@ -36,7 +41,9 @@ namespace sorrow {
     /**
      * sorrow_io.cpp
      */
-    void SetupIOStreams(Handle<Object> internals);
+    namespace IOStreams {
+        void Initialize(Handle<Object> internals);
+    }
     // Can only be used after streams are setup
     extern Persistent<Function> rawStream_f;
     extern Persistent<Function> textStream_f;
@@ -45,15 +52,21 @@ namespace sorrow {
     /**
      * sorrow_binary.cpp
      */
-    void SetupBinaryTypes(Handle<Object> internals);
+    namespace BinaryTypes {
+        void Initialize(Handle<Object> internals);
+    }
     // Can only be used after types are setup
-    extern Persistent<Function> byteString_f;
-    extern Persistent<Function> byteArray_f;
+    extern Persistent<Function> byteString;
+    extern Persistent<Function> byteArray;
+    extern Persistent<FunctionTemplate> byteString_t;
+    extern Persistent<FunctionTemplate> byteArray_t;
     
     /**
      * sorrow_io.cpp
      */
-    void SetupFS(Handle<Object> internals);
+    namespace Filesystem {
+        void Initialize(Handle<Object> internals);
+    }
     
 }
 

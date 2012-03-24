@@ -25,7 +25,7 @@ var results = test.run({
     notTest: function() {
         assert.ok(false, 'should not have run');
     },
-    TestDog: function() {
+    TestCaps: function() {
         assert.ok(true, 'should not have failed');
     },
     
@@ -33,6 +33,7 @@ var results = test.run({
     testBinaryThrowsError: function() {
         assert.throws(b.Binary, 'Binary should throw an exception');
     },
+    
     testByteArrayIsBinary: function() {
         var ba = new b.ByteArray();
         assert.ok(ba instanceof b.ByteArray, 'should be instanceof ByteArray');
@@ -49,34 +50,112 @@ var results = test.run({
         for (var i = 0; i < 10; i++) {
             assert.equal(a[i], 0, 'all values should be 0');
         }
+        
     },
-    testByteArrayConstructors_copy: function() {
+    testByteArrayConstructors_copyFromArray: function() {
         var a = new b.ByteArray([1,2,3,4,5]);
         var c = new b.ByteArray(a);
-        assert.equal(a.length, 5, 'should be length 10');
+        assert.equal(a.length, 5, 'should be length 5');
         for (var i = 0; i < 5; i++) {
             assert.equal(a[i], c[i], 'all values should be the same');
         }
+    },
+    testByteArrayConstructors_copyFromString: function() {
+        var a = new b.ByteString([1,2,3,4,5]);
+        var c = new b.ByteArray(a);
+        assert.equal(a.length, 5, 'should be length 5');
+        for (var i = 0; i < 5; i++) {
+            assert.equal(a.codeAt(i), c[i], 'all values should be the same');
+        }
+    },
+    testByteArrayConstructors_copyFromStringMustBeCopy: function() {
+        var a = new b.ByteString([1,2,3,4,5]);
+        var c = new b.ByteArray(a);
+        assert.equal(a.length, 5, 'should be length 5');
+        //change all the calues of the array and make sure that didn't change the BS
+        for (var i = 0; i < 5; i++) { c[i] = 17; }
+        for (var i = 0; i < 5; i++) {
+            assert.notEqual(a.codeAt(i), c[i], 'all values should not be the same');
+        }
+    },
+    testByteArrayConstructors_ArrayOfNonBytes: function() {
+        assert.throws(function() {
+            var a = new b.ByteString([1,2,-3,4,270]); // -3, 270 is not a byte
+        }, 'should throw an expection when it hits -3 or 270');
     },
     testByteArrayConstructors_stringCharset: function() {
         assert.ok(new b.ByteArray('Hello, world', 'us-ascii'), 'should support ascii');
         assert.ok(new b.ByteArray('こんにちは 世界', 'utf-8'), 'should support utf-8');
         assert.throws(function() {
             new b.ByteArray('Καλημέρα κόσμε', 'ebcdic');
-        }, 'should not support ebcdic');
+        }, 'TODO: implement transcoding!');
     },
-    testByteArray_toByteArray: function() {
-        var a = new b.ByteArray([1,2,3,4,5]);
-        var c = a.toByteArray();
-        assert.equal(a.length, 5, 'should be length 10');
+    testByteArray_LengthMustBeMutable: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        a.length = 10;
+        assert.equal(a.length, 10, 'length must be mutable');
         for (var i = 0; i < 5; i++) {
-            assert.equal(a[i], c[i], 'all values should be the same');
+            assert.equal(a[i], data[i], 'all values should still be data');
+        }
+        for (var i = 5; i < 10; i++) {
+            assert.equal(a[i], 0, 'all values should be 0');
         }
     },
+    testByteArray_IndexMustBeMutable: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        assert.equal(a[1], 2, 'uhhh....');
+        a[1] = 12;
+        assert.equal(a[1], 12, 'uhhh....');
+    },
+    testByteArray_toArray: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        var t = a.toArray();
+        assert.equal(t.length, 5);
+    },
+    testByteArray_toString: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        assert.equal(a.toString(), '[ByteArray 5]');
+    },
+    testByteArray_toSource: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        assert.equal(a.toSource(), 'ByteArray([1,2,3,4,5])');
+    },
+    testByteArray_toByteArray: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        var c = a.toByteArray();
+        assert.ok(c instanceof b.ByteArray, 'must be ByteArray');
+        assert.equal(a.length, c.length, 'length of copy should be the same');
+    },
+    testByteArray_toByteString: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        var c = a.toByteString();
+        assert.ok(c instanceof b.ByteString, 'must be ByteString');
+        assert.equal(a.length, c.length, 'length of copy should be the same');
+    },
+    testByteArray_byteAt: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        var c = a.byteAt(1);
+        assert.ok(c instanceof b.ByteString, 'must be ByteString')
+        assert.equal(a.length, c.length, 'length of copy should be the same');
+    },
+    testByteArray_valueAt: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        assert.equal(a.byteAt(1), a.valueAt(1), 'valueAt should be the same as ByteAt');
+    },
+    
     testByteArray_getCodeAt: function() {
         var a = new b.ByteArray([1,2,3,4,5]);
-        assert.equal(a[3], a.get(3), 'accessors should bahave the same');
-        assert.equal(a[3], a.codeAt(3), 'accessors should bahave the same');
+        assert.equal(a[3], a.get(3), 'accessors should behave the same');
+        assert.equal(a[3], a.codeAt(3), 'accessors should behave the same');
     },
     testByteArray_copy: function() {
         var c = new b.ByteArray([1,2,3,4,5]);
@@ -110,9 +189,12 @@ var results = test.run({
             assert.equal(a[i], 13, 'all values should be the same');
         }
     },
-    testByteArray_toString: function() {
-        var d = new b.ByteArray(10);
-        assert.equal(d.toString(), '[ByteArray 10]');
+    testByteArray_concat: function() {
+        var a = new b.ByteArray(10);
+        var c = new b.ByteArray([13]);
+        var d = a.concat(c);
+        assert.ok(d instanceof b.ByteString, 'must be ByteString');
+        assert.equal(d.length, 11);
     },
     
     testByteStringIsBinary: function() {
@@ -179,8 +261,8 @@ var results = test.run({
     
     testRawStreamConstructor_readWayTooMuch: function() {
         var stream = new io.Stream(resolve('driver.js'), 'rb');
-        var bs = stream.read(10000);
-        assert.ok(bs.length < 10000, 'shouldnt be 10000 bytes long');
+        var bs = stream.read(100000);
+        assert.ok(bs.length < 100000, 'shouldnt be 100000 bytes long');
         assert.ok(bs instanceof b.ByteString, 'should be instanceof ByteString');
     },
     
@@ -240,5 +322,3 @@ var results = test.run({
         assert.equal(5, yo, 'Should be 5');
     }
 });
-
-assert.equal(results, 0, 'all tests should pass');

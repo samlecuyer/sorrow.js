@@ -41,6 +41,8 @@
 				'src/sorrow_fs.cpp',
 				'src/sorrow_io.cpp',
 				'src/v8_arrays.cpp',
+				'src/sorrow_bytes.h',
+				'src/sorrow_bytes.cpp',
 				'<(SHARED_INTERMEDIATE_DIR)/sorrow_natives.h',
 				'<@(library_files)',
 				'common.gypi',

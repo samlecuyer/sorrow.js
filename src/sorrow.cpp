@@ -168,9 +168,9 @@ namespace sorrow {
         
         internals->Set(String::New("global"), global);
 		
-		SetupBinaryTypes(internals);
-		SetupIOStreams(internals);
-        SetupFS(internals);
+        BinaryTypes::Initialize(internals);
+		IOStreams::Initialize(internals);
+        Filesystem::Initialize(internals);
 		
         return internals;
 	} // SetupInternals
