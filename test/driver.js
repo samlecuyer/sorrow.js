@@ -144,12 +144,16 @@ var results = test.run({
         var a = new b.ByteArray(data);
         var c = a.byteAt(1);
         assert.ok(c instanceof b.ByteString, 'must be ByteString')
-        assert.equal(a.length, c.length, 'length of copy should be the same');
+        assert.equal(1, c.length, 'length of copy should be the same');
     },
     testByteArray_valueAt: function() {
         var data = [1,2,3,4,5];
         var a = new b.ByteArray(data);
-        assert.equal(a.byteAt(1), a.valueAt(1), 'valueAt should be the same as ByteAt');
+        var d = a.byteAt(1);
+        var e = a.valueAt(1);
+        
+        assert.equal(d.length, e.length, 'both should return a single byte');
+        assert.equal(d.codeAt(0), e.codeAt(0), 'both should return a single byte');
     },
     
     testByteArray_getCodeAt: function() {

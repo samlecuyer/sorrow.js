@@ -114,11 +114,16 @@ namespace sorrow {
         return Undefined();
     }
     
+    JS_SETTER(ByteArrayLengthSetter) {
+        BYTES_FROM_BIN(info.This())->resize(value->Uint32Value(), true);
+    }
+    
 	JS_FUNCTN(ByteArray) {
         HandleScope scope;
         Handle<Object> string = args.This();
 		Bytes *bytes;
 		int argsLength = args.Length();
+        try {
         switch (argsLength) {
             case 0: 
                 // ByteString()
@@ -150,7 +155,9 @@ namespace sorrow {
                 bytes = new Bytes(str.length(), (uint8_t*)*str);
                 break;
         }
-        
+        } catch ( char *e) {
+            return EXCEPTION(e)
+        }
 		Persistent<Object> persistent_string = Persistent<Object>::New(string);
 		persistent_string.MakeWeak(bytes, ExternalWeakCallback);
 		persistent_string.MarkIndependent();
@@ -166,7 +173,6 @@ namespace sorrow {
 		// function Binary
 		Local<FunctionTemplate> binary_t = FunctionTemplate::New(BinaryFunction);
         Local<ObjectTemplate> binary_ot = binary_t->PrototypeTemplate();
-        binary_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter);
         SET_METHOD(binary_ot, "toArray", BinaryToArray);
 		internals->Set(JS_STR("Binary"), binary_t->GetFunction());
 		
@@ -175,11 +181,12 @@ namespace sorrow {
         Local<ObjectTemplate> byteArray_ot = byteArray_t->InstanceTemplate();
 		byteArray_t->Inherit(binary_t);
         
+        byteArray_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter, ByteArrayLengthSetter);
         byteArray_ot->SetIndexedPropertyHandler(ByteArrayIndexedGetter, ByteArrayIndexedSetter);
-        
         byteArray_ot->SetInternalFieldCount(1);
 		
         byteArray = Persistent<Function>::New(byteArray_t->GetFunction());
+        byteArray_t->SetClassName(JS_STR("ByteArray"));
 		internals->Set(JS_STR("ByteArray"), byteArray);
         
         // function ByteString
@@ -187,12 +194,15 @@ namespace sorrow {
         Local<ObjectTemplate> byteString_ot = byteString_t->InstanceTemplate();
 		byteString_t->Inherit(binary_t);
         
+        
+        byteString_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter);
         byteString_ot->SetIndexedPropertyHandler(ByteStringIndexedGetter);
         SET_METHOD(byteString_ot, "codeAt", ByteStringCodeAt)
         SET_METHOD(byteString_ot, "decodeToString", ByteStringDecodeToString)
         byteString_ot->SetInternalFieldCount(1);
 		
         byteString = Persistent<Function>::New(byteString_t->GetFunction());
+        byteArray_t->SetClassName(JS_STR("ByteString"));
 		internals->Set(JS_STR("ByteString"), byteString);
 		
 	}
