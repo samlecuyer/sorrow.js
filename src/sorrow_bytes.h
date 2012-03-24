@@ -24,6 +24,8 @@ namespace sorrow {
         void    setByteAt(size_t, uint8_t);
         void    resize(size_t, bool); 
         
+        Bytes *concat(const Arguments&);
+        
         Handle<Array> toArray();
 
 	private:

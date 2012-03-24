@@ -106,6 +106,13 @@ namespace sorrow {
         return String::New((const char*)bytes->getBytes(), bytes->getLength());
     }
     
+    JS_FUNCTN(ByteStringConcat) {
+        HandleScope scope;
+        Bytes *bytes = BYTES_FROM_BIN(args.This())->concat(args);
+		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
+		Local<Value> bs = byteString->NewInstance(1, bsArgs);
+    }
+    
     
     /** 
      * ByteArray functions
@@ -175,6 +182,14 @@ namespace sorrow {
     JS_SETTER(ByteArrayLengthSetter) {
         BYTES_FROM_BIN(info.This())->resize(value->Uint32Value(), true);
     }
+    
+    JS_FUNCTN(ByteArrayConcat) {
+        HandleScope scope;
+        Bytes *bytes = BYTES_FROM_BIN(args.This())->concat(args);
+		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
+		return byteArray->NewInstance(1, bsArgs);
+    }
+
 	
     
     /** 
@@ -197,6 +212,7 @@ namespace sorrow {
         Local<ObjectTemplate> byteArray_ot = byteArray_t->InstanceTemplate();
 		byteArray_t->Inherit(binary_t);
         
+        SET_METHOD(byteArray_ot, "concat", ByteArrayConcat)
         byteArray_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter, ByteArrayLengthSetter);
         byteArray_ot->SetIndexedPropertyHandler(ByteArrayIndexedGetter, ByteArrayIndexedSetter);
         byteArray_ot->SetInternalFieldCount(1);
@@ -214,6 +230,7 @@ namespace sorrow {
         byteString_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter);
         byteString_ot->SetIndexedPropertyHandler(ByteStringIndexedGetter);
         SET_METHOD(byteString_ot, "decodeToString", ByteStringDecodeToString)
+        SET_METHOD(byteString_ot, "concat", ByteStringConcat)
         byteString_ot->SetInternalFieldCount(1);
 		
         byteString = Persistent<Function>::New(byteString_t->GetFunction());

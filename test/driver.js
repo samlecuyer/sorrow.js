@@ -193,12 +193,20 @@ var results = test.run({
             assert.equal(a[i], 13, 'all values should be the same');
         }
     },
-    testByteArray_concat: function() {
+    testByteArray_concatByteArray: function() {
         var a = new b.ByteArray(10);
         var c = new b.ByteArray([13]);
         var d = a.concat(c);
-        assert.ok(d instanceof b.ByteString, 'must be ByteString');
+        assert.ok(d instanceof b.ByteArray, 'must be ByteArray');
         assert.equal(d.length, 11);
+        assert.equal(d[10], 13, 'must have put 13 on the end');
+    },
+    testByteArray_concatArray: function() {
+        var a = new b.ByteArray(10);
+        var d = a.concat([13]);
+        assert.ok(d instanceof b.ByteArray, 'must be ByteArray');
+        assert.equal(d.length, 11);
+        assert.equal(d[10], 13, 'must have put 13 on the end');
     },
     
     testByteStringIsBinary: function() {

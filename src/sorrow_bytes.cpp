@@ -68,6 +68,39 @@ namespace sorrow {
         this->len = nl;
     }
     
+    
+    Bytes *Bytes::concat(const Arguments &args) {
+        size_t totalSize = this->len;
+        for (int i = 0; i < args.Length(); i++) {
+            if (IS_BINARY(args[i])) {
+                totalSize += BYTES_FROM_BIN(Object::Cast(*args[i]))->getLength();
+            } else if (args[0]->IsArray()){
+                totalSize += Array::Cast(*args[i])->Length();
+            }
+        }
+        uint8_t *newBytes = (uint8_t*)malloc(totalSize);
+        
+        memcpy(newBytes, this->bytes, this->len);
+        uint8_t *nca = newBytes + this->len;
+        for (int i = 0; i < args.Length(); i++) {
+            if (IS_BINARY(args[i])) {
+                Bytes *toCopy = BYTES_FROM_BIN(Object::Cast(*args[i]));
+                memcpy(nca, toCopy->getBytes(), toCopy->getLength());
+                nca += toCopy->getLength();
+            } else if (args[i]->IsArray()){
+                Local<Array> array = Array::Cast(*args[i]);
+                for (int i = 0; i < array->Length(); i++) {
+                    uint32_t val = array->Get(i)->Uint32Value();
+                    if (!IS_BYTE(val)) throw "NonByte";
+                    *(nca++) = val;
+                }
+            }
+        }
+        Bytes *ret = new Bytes(totalSize, newBytes);
+        free(newBytes);
+        return ret;
+    }
+    
     Handle<Array>Bytes::toArray() {
         HandleScope scope;
         Handle<Array> array = Array::New(this->len);
