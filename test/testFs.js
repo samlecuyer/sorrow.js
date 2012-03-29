@@ -1,0 +1,48 @@
+/*
+ copyright 2012 sam l'ecuyer
+*/
+
+var ok = require('assert').ok;
+var equal = require('assert').equal;
+
+var test = require('test');
+var fs   = require('fs');
+var dir  = fs.directory(module.uri);
+
+function resolve(path) {
+    return fs.join(dir, path);
+}
+
+exports.runTests =  function() {
+test.run({
+    
+    testFilesystem_copy: function() {
+        var inf = fs.open(resolve('data/test_data1'), 'r');
+        var outf = fs.open(resolve('data/tmp_test_data2'), 'w');
+        inf.copy(outf);
+    }, 
+    
+    testFilesystem_pwd: function() {
+        ok(fs.cwd, 'There should be a cwd');
+    }, 
+    
+    testFilesystem_splitJoin: function() {
+        var path = '/web/home/sam';
+        var splitPath = fs.split(path);
+        var joinPath  = fs.join.apply(this,splitPath);
+        equal(path, joinPath, 'the paths should be identical');
+    },
+    
+    testFilesystem_normal1: function() {
+        var path = '/web/home/sam';
+        var splitPath = fs.split(path);
+        var joinPath  = fs.join.apply(this,splitPath);
+        equal(path, joinPath, 'the paths should be identical');
+    },
+    
+    testModule_require: function() {
+        var yo = require('./a').yo('This shouldnt throw an exception');
+        equal(5, yo, 'Should be 5');
+    }
+});
+};
