@@ -16,6 +16,7 @@
 			'lib/plugins.js',
 			'lib/system.js',
 			'lib/test.js',
+			'lib/util.js',
 		],
 	},
 	

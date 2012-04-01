@@ -12,3 +12,4 @@ assert.ok(test.run, 'run exists');
 require('testBytes').runTests();
 require('testTest').runTests();
 require('testFs').runTests();
+require('testUtil').runTests();
