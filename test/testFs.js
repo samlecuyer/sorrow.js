@@ -22,8 +22,8 @@ test.run({
         inf.copy(outf);
     }, 
     
-    testFilesystem_pwd: function() {
-        ok(fs.cwd, 'There should be a cwd');
+    testFilesystem_cwd: function() {
+        ok(fs.workingDirectory(), 'There should be a cwd');
     }, 
     
     testFilesystem_splitJoin: function() {

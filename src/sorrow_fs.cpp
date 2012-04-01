@@ -122,12 +122,9 @@ namespace sorrow {
 		}
 		return String::New(fullPath);
 	}
-	
-    // WorkingDirectory functions are implemented as an rw
-    // variable and any wrappers can be done in js
     
     // workingDirectory
-	JS_GETTER(CwdGetter) {
+	JS_FUNCTN(WorkingDirectory) {
         char *path = NULL;
         size_t size;
         path = getcwd(path, size);
@@ -135,13 +132,12 @@ namespace sorrow {
     }
     
     // changeWorkingDirectory
-    JS_SETTER(CwdSetter) {
+    JS_FUNCTN(ChangeWorkingDirectory) {
         HandleScope scope;
-        String::Utf8Value path(value);
+        String::Utf8Value path(args[0]);
         int err = chdir(*path);
         if (err) {
-            EXCEPTION("Could not set working directory")
-            return;
+            return EXCEPTION("Could not set working directory")
         }
     }
     
@@ -425,7 +421,8 @@ namespace sorrow {
 		HandleScope scope;
         Local<Object> fsObj = Object::New();
         
-        fsObj->SetAccessor(String::New("cwd"), CwdGetter, CwdSetter);
+        SET_METHOD(fsObj, "workingDirectory",    WorkingDirectory)
+        SET_METHOD(fsObj, "changeWorkingDirectory",    ChangeWorkingDirectory)
 		
 		SET_METHOD(fsObj, "openRaw",    OpenRaw)
         SET_METHOD(fsObj, "move",       Move)
