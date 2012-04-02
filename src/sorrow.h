@@ -62,11 +62,22 @@ namespace sorrow {
     extern Persistent<FunctionTemplate> byteArray_t;
     
     /**
-     * sorrow_io.cpp
+     * sorrow_fs.cpp
      */
     namespace Filesystem {
         void Initialize(Handle<Object> internals);
     }
+	
+	/**
+     * sorrow_ext.cpp
+     */
+    namespace Extensions {
+        void Initialize(Handle<Object> internals);
+    }
+	
+	typedef Handle<Object> sp_init();
+	typedef void *sp_destroy();
+
     
 }
 

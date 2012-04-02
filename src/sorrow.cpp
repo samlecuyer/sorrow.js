@@ -171,6 +171,7 @@ namespace sorrow {
         BinaryTypes::Initialize(internals);
 		IOStreams::Initialize(internals);
         Filesystem::Initialize(internals);
+		Extensions::Initialize(internals);
 		
         return internals;
 	} // SetupInternals
