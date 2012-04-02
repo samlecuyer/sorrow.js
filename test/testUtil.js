@@ -45,11 +45,13 @@ test.run({
     },
 
     testPrintf_shouldPrintToStdout: function() {
+        var oldSprintf = util.sprintf;
         util.sprintf = function() {
             equal(2, arguments.length);
             equal(require('system').stdout, arguments[0]);
         };
         util.printf('123');
+        util.sprintf = oldSprintf;
     },
     
 });

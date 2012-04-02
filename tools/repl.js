@@ -26,7 +26,9 @@ function _run() {
                 break;
             } else {
                 var result = eval(line);
-                stdout.writeLine(result);
+                if (result !== undefined) {
+                    stdout.writeLine(result);
+                }
             }
         } catch (e) {
             if (e == 'EOF') break;
