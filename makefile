@@ -8,6 +8,9 @@ all: out/Makefile sorrow
 test: all
 	./sorrow test/driver.js
 
+install: all
+	./sorrow tools/install.js
+
 sorrow: config.gypi
 	$(MAKE) -C out BUILDTYPE=Release
 	ln -fs out/Release/sorrow sorrow
