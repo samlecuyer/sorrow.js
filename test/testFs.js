@@ -60,6 +60,11 @@ test.run({
         equal('ext', fs.extension(path));
     },
     
+    testFilesystem_extension: function() {
+        var path = '/usr/bin';
+        equal(path, fs.canonical(path));
+    },
+    
     testFilesystem_extension2: function() {
         var path = '/web/home/sam';
         equal('', fs.extension(path));

@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/param.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>

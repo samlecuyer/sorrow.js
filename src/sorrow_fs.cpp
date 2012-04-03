@@ -62,7 +62,7 @@ namespace sorrow {
         struct stat buffer;
         int status = stat(*path, &buffer);
         if (status != 0) {
-            status = creat(*path, 0666);
+            status = creat(*path, 0777);
             if (status != 0) return EXCEPTION("Could not touch file")
         }
         
@@ -116,11 +116,16 @@ namespace sorrow {
 		HandleScope scope;
 		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
         String::Utf8Value path(args[0]->ToString());
-		char *fullPath = realpath(*path, NULL);
-		if (fullPath == 0) {
+		char *buffer = new char[PATH_MAX];
+		realpath(*path, buffer);
+		printf(" to: %s\n", buffer);
+		if (buffer == 0) {
+			delete buffer;
 			return Undefined();
 		}
-		return String::New(fullPath);
+		Local<String> ret = String::New(buffer);
+		delete buffer;
+		return scope.Close(ret);
 	}
     
     // workingDirectory
@@ -249,7 +254,7 @@ namespace sorrow {
 		int read = readlink(*path, buffer, PATH_MAX);
         if (read == -1) {
             delete buffer;
-            return EXCEPTION("Could not create symlink")
+            return EXCEPTION("Could not read link")
         }
         Local<String> target = String::New(buffer, read);
         delete buffer;
