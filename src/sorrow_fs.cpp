@@ -118,7 +118,6 @@ namespace sorrow {
         String::Utf8Value path(args[0]->ToString());
 		char *buffer = new char[PATH_MAX];
 		realpath(*path, buffer);
-		printf(" to: %s\n", buffer);
 		if (buffer == 0) {
 			delete buffer;
 			return Undefined();
