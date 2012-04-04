@@ -8,18 +8,20 @@ var fs  = require('fs');
 var sys = require('system');
 var p   = require('util').printf;
 
-function install() {
-    if (!fs.isWriteable('/usr/bin')) {
-        p('Cannot write to /usr/bin.  Are you sudo-ing? \n');
+function install(source, target) {
+    var targetDir = fs.directory(target)
+    if (!fs.isWriteable(targetDir)) {
+        p('Cannot write to '+targetDir+'.  Are you sudo-ing? \n');
     } else {
         p('Installing sorrow.js \n');
-        fs.touch('/usr/bin/sorrow');
-        fs.copy('out/Release/sorrow', '/usr/bin/sorrow');
-        fs.changePermissions('/usr/bin/sorrow', 0755);
+        if (fs.exists(target))
+            fs.remove(target);
+        fs.copy(source, target);
+        fs.changePermissions(target, 0755);
         p('Finished installing sorrow.js \n');
     }
 }
 
 if (module.id == require.main) {
-    install();
+    install('out/Release/sorrow', '/usr/bin/sorrow');
 }
