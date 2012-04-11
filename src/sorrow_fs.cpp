@@ -18,41 +18,45 @@ namespace sorrow {
      *  File functions for A/0
      */
     
-	JS_FUNCTN(OpenRaw) {
-		return EXCEPTION("Unimplemented")
+	V8_FUNCTN(OpenRaw) {
+		return THROW(ERR(V8_STR("Unimplemented")))
 	}
 	
     // only implements part 1
-	JS_FUNCTN(Move) {
+	V8_FUNCTN(Move) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
 		String::Utf8Value source(args[0]);
         String::Utf8Value target(args[1]);
 		int mv = rename(*source, *target);
 		if (mv != 0) {
-			return EXCEPTION("File could not be moved")
+			return THROW(ERR(V8_STR("Could not move file")))
 		}
 		return Undefined();
 	}
 	
-	JS_FUNCTN(Remove) {
+	V8_FUNCTN(Remove) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
-		String::Utf8Value path(args[0]);
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
+        String::Utf8Value path(args[0]);
 		int rm = remove(*path);
 		if (rm != 0) {
-			return EXCEPTION("File could not be removed")
+			return THROW(ERR(V8_STR("Could not remove file")))
 		}
 		return Undefined();
 	}
 	
-	JS_FUNCTN(Touch) {
+	V8_FUNCTN(Touch) {
         HandleScope scope;
         if (args.Length() < 1) {
-            return EXCEPTION("This method must take at least 1 argument")
+            return THROW(ERR(V8_STR("This method must take at least one argument")))
         } 
         if (args.Length() == 2 && !args[1]->IsDate()) {
-            return EXCEPTION("Second arg must be a Date")
+            return THROW(TYPE_ERR(V8_STR("Second arg must be a Date")))
         } 
         
         String::Utf8Value path(args[0]->ToString());
@@ -63,7 +67,9 @@ namespace sorrow {
         int status = stat(*path, &buffer);
         if (status != 0) {
             status = creat(*path, 0777);
-            if (status != 0) return EXCEPTION("Could not touch file")
+            if (status != 0) {
+               return THROW(ERR(V8_STR("Could not touch file"))) 
+            }
         }
         
         if (args.Length() == 1) {
@@ -76,7 +82,7 @@ namespace sorrow {
             touch = utime(*path, &ubuf); 
         }
         if (touch != 0) {
-            return EXCEPTION("File could not be touched")
+            return THROW(ERR(V8_STR("Could not touch file")))
         }
         return Undefined();
 	}
@@ -86,25 +92,33 @@ namespace sorrow {
      *  Directory functions for A/0
      */
     
-	JS_FUNCTN(MakeDirectory) {
+	V8_FUNCTN(MakeDirectory) {
         HandleScope scope;
-		if (args.Length() < 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() < 1) {
+            return THROW(ERR(V8_STR("This method must take at least one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         mode_t mod = 0777;
         if (args.Length() == 2 && args[1]->IsUint32()) {
             mod = args[1]->Uint32Value();
         }
         int status = mkdir(*path, mod);
-        if (status != 0) return EXCEPTION("Could not create directory");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not create directory")))
+        }
         return Undefined();
 	}
 	
-	JS_FUNCTN(RemoveDirectory) {
+	V8_FUNCTN(RemoveDirectory) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
 		int status = rmdir(*path);
-        if (status != 0) return EXCEPTION("Could not create directory");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not remove directory")))
+        }
         return Undefined();
 	}
 	
@@ -112,9 +126,11 @@ namespace sorrow {
     /**
      *  Path functions for A/0
      */
-	JS_FUNCTN(Canonical) {
+	V8_FUNCTN(Canonical) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
 		char *buffer = new char[PATH_MAX];
 		realpath(*path, buffer);
@@ -122,26 +138,26 @@ namespace sorrow {
 			delete buffer;
 			return Undefined();
 		}
-		Local<String> ret = String::New(buffer);
+		Local<String> ret = V8_STR(buffer);
 		delete buffer;
 		return scope.Close(ret);
 	}
     
     // workingDirectory
-	JS_FUNCTN(WorkingDirectory) {
+	V8_FUNCTN(WorkingDirectory) {
         char *path = NULL;
         size_t size;
         path = getcwd(path, size);
-        return String::New(path);
+        return V8_STR(path);
     }
     
     // changeWorkingDirectory
-    JS_FUNCTN(ChangeWorkingDirectory) {
+    V8_FUNCTN(ChangeWorkingDirectory) {
         HandleScope scope;
         String::Utf8Value path(args[0]);
         int err = chdir(*path);
         if (err) {
-            return EXCEPTION("Could not set working directory")
+            return THROW(ERR(V8_STR("Could not change working directory")))
         }
     }
     
@@ -150,72 +166,94 @@ namespace sorrow {
      *  Security functions for A/0
      */
     
-	JS_FUNCTN(Owner) {
+	V8_FUNCTN(Owner) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
         struct passwd *pwd_buf;
 		int status = stat(*path, &buffer);
         if (status != 0) return Undefined();
         pwd_buf = getpwuid(buffer.st_uid);
-        return String::New(pwd_buf->pw_name);
+        return V8_STR(pwd_buf->pw_name);
 	}
-    JS_FUNCTN(ChangeOwner) {
+    V8_FUNCTN(ChangeOwner) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
         String::Utf8Value path(args[0]->ToString());
         String::Utf8Value user(args[1]->ToString());
         struct stat buffer;
 		int status = stat(*path, &buffer);
-        if (status != 0) return EXCEPTION("Could not change owner");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not change owner")))
+        }
         struct passwd *pwd_buf = getpwnam(*user);
         status = chown(*path, pwd_buf->pw_uid, buffer.st_gid);
-        if (status != 0) return EXCEPTION("Could not change owner");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not change owner")))
+        }
         return Undefined();
 	}
 	
-	JS_FUNCTN(Group) {
+	V8_FUNCTN(Group) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
         struct group *grp_buf;
 		int status = stat(*path, &buffer);
         if (status != 0) return Undefined();
         grp_buf = getgrgid(buffer.st_gid);
-        return String::New(grp_buf->gr_name);
+        return V8_STR(grp_buf->gr_name);
 	}
-    JS_FUNCTN(ChangeGroup) {
+    V8_FUNCTN(ChangeGroup) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
         String::Utf8Value path(args[0]->ToString());
         String::Utf8Value name(args[1]->ToString());
         struct stat buffer;
 		int status = stat(*path, &buffer);
-        if (status != 0) return EXCEPTION("Could not change group");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not change group")))
+        }
         struct group *grp_buf = getgrnam(*name);
         status = chown(*path, buffer.st_uid, grp_buf->gr_gid);
-        if (status != 0) return EXCEPTION("Could not change group");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not change group")))
+        }
         return Undefined();
 	}
     
-    JS_FUNCTN(Permissions) {
+    V8_FUNCTN(Permissions) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
 		int status = stat(*path, &buffer);
         if (status != 0) return Undefined();
         return Integer::New(buffer.st_mode);
 	}
-    JS_FUNCTN(ChangePermissions) {
+    V8_FUNCTN(ChangePermissions) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
         String::Utf8Value path(args[0]->ToString());
         mode_t mod = args[1]->Uint32Value();
 		int status = chmod(*path, mod);
-        if (status != 0) return EXCEPTION("Could not change permissions");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not change permissions")))
+        }
         return Undefined();
 
 	}
@@ -225,35 +263,45 @@ namespace sorrow {
      *  Link functions for A/0
      */
     
-	JS_FUNCTN(SymbolicLink) {
+	V8_FUNCTN(SymbolicLink) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
         String::Utf8Value path1(args[0]->ToString());
         String::Utf8Value path2(args[1]->ToString());
         int status = symlink(*path1, *path2);
-        if (status != 0) return EXCEPTION("Could not create symlink")
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not create symlink")))
+        }
         return Undefined();
 	}
 	
-	JS_FUNCTN(HardLink) {
+	V8_FUNCTN(HardLink) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
         String::Utf8Value path1(args[0]->ToString());
         String::Utf8Value path2(args[1]->ToString());
         int status = link(*path1, *path2);
-        if (status != 0) return EXCEPTION("Could not create link")
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not create link")))
+        }
         return Undefined();
 	}
     
-    JS_FUNCTN(ReadLink) {
+    V8_FUNCTN(ReadLink) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 arguments")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         char *buffer = new char[PATH_MAX];
 		int read = readlink(*path, buffer, PATH_MAX);
         if (read == -1) {
             delete buffer;
-            return EXCEPTION("Could not read link")
+            return THROW(ERR(V8_STR("Could not read link")))
         }
         Local<String> target = String::New(buffer, read);
         delete buffer;
@@ -265,18 +313,22 @@ namespace sorrow {
      *  Test functions for A/0
      */
     
-	JS_FUNCTN(Exists) {
+	V8_FUNCTN(Exists) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
 		int status = stat(*path, &buffer);
         return Boolean::New(status == 0);
 	}
 	
-	JS_FUNCTN(IsFile) {
+	V8_FUNCTN(IsFile) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
 		int status = stat(*path, &buffer);
@@ -284,9 +336,11 @@ namespace sorrow {
         return Boolean::New(S_ISREG(buffer.st_mode));
 	}
     
-    JS_FUNCTN(IsDirectory) {
+    V8_FUNCTN(IsDirectory) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
 		int status = stat(*path, &buffer);
@@ -294,9 +348,11 @@ namespace sorrow {
         return Boolean::New(S_ISDIR(buffer.st_mode));
 	}
     
-    JS_FUNCTN(IsLink) {
+    V8_FUNCTN(IsLink) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
 		int status = lstat(*path, &buffer);
@@ -304,25 +360,31 @@ namespace sorrow {
         return Boolean::New(S_ISLNK(buffer.st_mode));
 	}
     
-    JS_FUNCTN(IsReadable) {
+    V8_FUNCTN(IsReadable) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         int status = access(*path, R_OK);
         return Boolean::New(status == 0);
 	}
     
-    JS_FUNCTN(IsWriteable) {
+    V8_FUNCTN(IsWriteable) {
         HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
 		int status = access(*path, W_OK);
         return Boolean::New(status == 0);
 	}
     
-    JS_FUNCTN(Same) {
+    V8_FUNCTN(Same) {
 		HandleScope scope;
-		if (args.Length() != 2) return EXCEPTION("This method must take 2 arguments")
+		if (args.Length() != 2) {
+            return THROW(ERR(V8_STR("This method must take two arguments")))
+        }
         String::Utf8Value path1(args[0]->ToString());
         String::Utf8Value path2(args[1]->ToString());
         struct stat buffer1;
@@ -336,8 +398,8 @@ namespace sorrow {
         return Boolean::New(buffer1.st_ino == buffer2.st_ino);
 	}
     
-    JS_FUNCTN(SameFilesystem) {
-		return EXCEPTION("Unimplemented")
+    V8_FUNCTN(SameFilesystem) {
+		return THROW(ERR(V8_STR("Unimplemented")))
 	}
     
     
@@ -345,23 +407,31 @@ namespace sorrow {
      *  Attribute functions for A/0
      */
     
-	JS_FUNCTN(Size) {
+	V8_FUNCTN(Size) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
         int status = stat(*path, &buffer);
-        if (status != 0) return EXCEPTION("Could not obtain size");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not get size")))
+        }
         return Number::New(buffer.st_size);
 	}
 	
-	JS_FUNCTN(LastModified) {
+	V8_FUNCTN(LastModified) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
         struct stat buffer;
         int status = stat(*path, &buffer);
-        if (status != 0) return EXCEPTION("Could not obtain last modified date");
+        if (status != 0) {
+            return THROW(ERR(V8_STR("Could not get last modified")))
+        }
         // don't count on portability :(
         return Date::New(static_cast<double>(buffer.st_mtime)*1000);
 	}
@@ -371,14 +441,18 @@ namespace sorrow {
      *  Listing functions for A/0
      */
     
-	JS_FUNCTN(List) {
+	V8_FUNCTN(List) {
 		HandleScope scope;
-		if (args.Length() != 1) return EXCEPTION("This method must take 1 argument")
+		if (args.Length() != 1) {
+            return THROW(ERR(V8_STR("This method must take one argument")))
+        }
         String::Utf8Value path(args[0]->ToString());
 		DIR *dir;
         struct dirent *listing;
 		dir = opendir(*path);
-        if (dir == NULL) return EXCEPTION("Could not read directory");
+        if (dir == NULL) {
+            return THROW(ERR(V8_STR("Could not read directory")))
+        }
         // seekdir doesn't seem to have an end like fseek does, so 
         // we have to iterate it twice.  sub-optimal.
         int count = 0;
@@ -394,7 +468,7 @@ namespace sorrow {
         count = 0;
         while (dir) {
             if ((listing = readdir(dir)) != NULL) {
-                list->Set(Integer::New(count++), String::New(listing->d_name));
+                list->Set(Integer::New(count++), V8_STR(listing->d_name));
             } else {
                 closedir(dir);
                 break;
@@ -403,20 +477,20 @@ namespace sorrow {
         return scope.Close(list);
 	}
 	
-	JS_FUNCTN(Iterate) {
-		return EXCEPTION("Unimplemented")
+	V8_FUNCTN(Iterate) {
+		return THROW(ERR(V8_STR("Unimplemented")))
 	}
     
-    JS_FUNCTN(Next) {
-		return EXCEPTION("Unimplemented")
+    V8_FUNCTN(Next) {
+		return THROW(ERR(V8_STR("Unimplemented")))
 	}
     
-    JS_FUNCTN(Iterator) {
-		return EXCEPTION("Unimplemented")
+    V8_FUNCTN(Iterator) {
+		return THROW(ERR(V8_STR("Unimplemented")))
 	}
     
-    JS_FUNCTN(Close) {
-		return EXCEPTION("Unimplemented")
+    V8_FUNCTN(Close) {
+		return THROW(ERR(V8_STR("Unimplemented")))
 	}
     
     
@@ -460,7 +534,7 @@ namespace sorrow {
         
         SET_METHOD(fsObj, "list",       List)
         
-        internals->Set(String::New("fs"), fsObj);
+        internals->Set(V8_STR("fs"), fsObj);
     }
     }
 	

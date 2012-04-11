@@ -68,6 +68,6 @@
         return;
     }
     
-    Module.runProg(args[0]);
+    return Module.runProg(args[0]);
     
 });

@@ -25,3 +25,4 @@ function install(source, target) {
 if (module.id == require.main) {
     install('out/Release/sorrow', '/usr/bin/sorrow');
 }
+

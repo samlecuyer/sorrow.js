@@ -17,11 +17,11 @@ namespace sorrow {
      * Binary functions to be shared between all Binary subclasses
      */
     
-	JS_FUNCTN(BinaryFunction) {
-		return ThrowException(JS_STR("Binary is non-instantiable"));
+	V8_FUNCTN(BinaryFunction) {
+		return THROW(V8_STR("Binary is non-instantiable"));
 	}
     
-    JS_GETTER(BinaryLengthGetter) {
+    V8_GETTER(BinaryLengthGetter) {
         return Integer::New(BYTES_FROM_BIN(info.This())->getLength());
     }
     
@@ -30,12 +30,12 @@ namespace sorrow {
 		object.Dispose();
 	}
     
-    JS_FUNCTN(BinaryToArray) {
+    V8_FUNCTN(BinaryToArray) {
         return BYTES_FROM_BIN(args.This())->toArray();
     }
     
     
-    JS_FUNCTN(BinaryCodeAt) {
+    V8_FUNCTN(BinaryCodeAt) {
         uint64_t index = args[0]->IntegerValue();
         uint64_t code = BYTES_FROM_BIN(args.This())->getByteAt(index);
         return Number::New(code);
@@ -45,7 +45,7 @@ namespace sorrow {
      * ByteString functions
      */
     
-    JS_FUNCTN(ByteString) {
+    V8_FUNCTN(ByteString) {
         HandleScope scope;
         Handle<Object> string = args.This();
 		Bytes *bytes;
@@ -69,7 +69,7 @@ namespace sorrow {
                     Bytes *otherBytes = reinterpret_cast<Bytes*>(External::Unwrap(args[0]));
                     bytes = new Bytes(otherBytes);
                 } else{
-                    return EXCEPTION("Not valid parameters -- bytestring")
+                    return THROW(TYPE_ERR(V8_STR("Not valid parameters")))
                 }
                 break;
             case 2:
@@ -80,7 +80,7 @@ namespace sorrow {
                 break;
         }
 		} catch ( char *e) {
-            return EXCEPTION(e)
+            return THROW(ERR(V8_STR(e)))
         }
 		Persistent<Object> persistent_string = Persistent<Object>::New(string);
 		persistent_string.MakeWeak(bytes, ExternalWeakCallback);
@@ -100,13 +100,13 @@ namespace sorrow {
         return scope.Close(bs);
     }
     
-    JS_FUNCTN(ByteStringDecodeToString) {
+    V8_FUNCTN(ByteStringDecodeToString) {
         HandleScope scope;
         Bytes *bytes = BYTES_FROM_BIN(args.This());
         return String::New((const char*)bytes->getBytes(), bytes->getLength());
     }
     
-    JS_FUNCTN(ByteStringConcat) {
+    V8_FUNCTN(ByteStringConcat) {
         HandleScope scope;
         Bytes *bytes = BYTES_FROM_BIN(args.This())->concat(args);
 		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
@@ -118,7 +118,7 @@ namespace sorrow {
      * ByteArray functions
      */
     
-	JS_FUNCTN(ByteArray) {
+	V8_FUNCTN(ByteArray) {
         HandleScope scope;
         Handle<Object> string = args.This();
 		Bytes *bytes;
@@ -145,7 +145,7 @@ namespace sorrow {
                     Bytes *otherBytes = reinterpret_cast<Bytes*>(External::Unwrap(args[0]));
                     bytes = new Bytes(otherBytes);
                 } else{
-                    return EXCEPTION("Not valid parameters")
+                    return THROW(TYPE_ERR(V8_STR("Not valid parameters")))
                 }
                 break;
             case 2:
@@ -156,7 +156,7 @@ namespace sorrow {
                 break;
         }
         } catch ( char *e) {
-            return EXCEPTION(e)
+            return THROW(ERR(V8_STR(e)))
         }
 		Persistent<Object> persistent_string = Persistent<Object>::New(string);
 		persistent_string.MakeWeak(bytes, ExternalWeakCallback);
@@ -173,17 +173,17 @@ namespace sorrow {
     Handle<Value> ByteArrayIndexedSetter(uint32_t index, Local< Value > value, const AccessorInfo &info) {
         uint32_t val = value->Uint32Value();
         if (!IS_BYTE(val)) {
-            EXCEPTION("must be a byte value")
+            return THROW(ERR(V8_STR("must be a byte value")))
         }
         BYTES_FROM_BIN(info.This())->setByteAt(index, val);
         return Undefined();
     }
     
-    JS_SETTER(ByteArrayLengthSetter) {
+    V8_SETTER(ByteArrayLengthSetter) {
         BYTES_FROM_BIN(info.This())->resize(value->Uint32Value(), true);
     }
     
-    JS_FUNCTN(ByteArrayConcat) {
+    V8_FUNCTN(ByteArrayConcat) {
         HandleScope scope;
         Bytes *bytes = BYTES_FROM_BIN(args.This())->concat(args);
 		Local<Value> bsArgs[1] = { External::New((void*)bytes) };
@@ -205,7 +205,7 @@ namespace sorrow {
         Local<ObjectTemplate> binary_ot = binary_t->PrototypeTemplate();
         SET_METHOD(binary_ot, "toArray", BinaryToArray);
         SET_METHOD(binary_ot, "codeAt", BinaryCodeAt)
-		internals->Set(JS_STR("Binary"), binary_t->GetFunction());
+		internals->Set(V8_STR("Binary"), binary_t->GetFunction());
 		
         // function ByteArray
 		byteArray_t = Persistent<FunctionTemplate>::New(FunctionTemplate::New(ByteArray));
@@ -213,13 +213,13 @@ namespace sorrow {
 		byteArray_t->Inherit(binary_t);
         
         SET_METHOD(byteArray_ot, "concat", ByteArrayConcat)
-        byteArray_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter, ByteArrayLengthSetter);
+        byteArray_ot->SetAccessor(V8_STR("length"), BinaryLengthGetter, ByteArrayLengthSetter);
         byteArray_ot->SetIndexedPropertyHandler(ByteArrayIndexedGetter, ByteArrayIndexedSetter);
         byteArray_ot->SetInternalFieldCount(1);
 		
         byteArray = Persistent<Function>::New(byteArray_t->GetFunction());
-        byteArray_t->SetClassName(JS_STR("ByteArray"));
-		internals->Set(JS_STR("ByteArray"), byteArray);
+        byteArray_t->SetClassName(V8_STR("ByteArray"));
+		internals->Set(V8_STR("ByteArray"), byteArray);
         
         // function ByteString
         byteString_t = Persistent<FunctionTemplate>::New(FunctionTemplate::New(ByteString));
@@ -227,15 +227,15 @@ namespace sorrow {
 		byteString_t->Inherit(binary_t);
         
         
-        byteString_ot->SetAccessor(JS_STR("length"), BinaryLengthGetter);
+        byteString_ot->SetAccessor(V8_STR("length"), BinaryLengthGetter);
         byteString_ot->SetIndexedPropertyHandler(ByteStringIndexedGetter);
         SET_METHOD(byteString_ot, "decodeToString", ByteStringDecodeToString)
         SET_METHOD(byteString_ot, "concat", ByteStringConcat)
         byteString_ot->SetInternalFieldCount(1);
 		
         byteString = Persistent<Function>::New(byteString_t->GetFunction());
-        byteArray_t->SetClassName(JS_STR("ByteString"));
-		internals->Set(JS_STR("ByteString"), byteString);
+        byteArray_t->SetClassName(V8_STR("ByteString"));
+		internals->Set(V8_STR("ByteString"), byteString);
 		
 	}
     }

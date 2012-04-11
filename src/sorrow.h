@@ -12,18 +12,22 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#define V8_STR(lit)     String::New(lit)
+#define V8_SETTER(name) void name(Local<String> property, Local<Value> value, const AccessorInfo& info)
+#define V8_GETTER(name) Handle<Value> name(Local<String> property, const AccessorInfo& info)
+#define V8_FUNCTN(name) Handle<Value> name(const Arguments& args)
+#define FN_OF_TMPLT(name) FunctionTemplate::New(name)->GetFunction()
+#define SET_METHOD(obj,name,method) obj->Set(V8_STR(name), FN_OF_TMPLT(method));
+
+#define THROW(excp) ThrowException(excp);
+#define ERR(val) Exception::Error(val)
+#define RANGE_ERR(val) Exception::RangeError(val)
+#define TYPE_ERR(val) Exception::TypeError(val)
+
 #define NULL_STREAM_EXCEPTION(file, message) \
     if (file == NULL) { \
-        return ThrowException(String::New(#message)); \
+        return THROW(ERR(V8_STR(#message))) \
     }
-
-#define JS_SETTER(name) void name(Local<String> property, Local<Value> value, const AccessorInfo& info)
-#define JS_GETTER(name) Handle<Value> name(Local<String> property, const AccessorInfo& info)
-#define JS_FUNCTN(name) Handle<Value> name(const Arguments& args)
-#define JS_STR(lit)     String::New(lit)
-#define FN_OF_TMPLT(name) FunctionTemplate::New(name)->GetFunction()
-#define SET_METHOD(obj,name,method) obj->Set(JS_STR(name), FN_OF_TMPLT(method));
-#define EXCEPTION(message) ThrowException(JS_STR(message));
 
 #define IS_BINARY(obj) (byteString_t->HasInstance(obj) || byteArray_t->HasInstance(obj))
 #define BYTES_FROM_BIN(obj) reinterpret_cast<Bytes*>(obj->GetPointerFromInternalField(0))
@@ -32,8 +36,8 @@ namespace sorrow {
 	using namespace v8;
 	
 	Local<Value> ExecuteString(Handle<String> source, Handle<Value> filename);
-	JS_FUNCTN(Quit);
-	JS_FUNCTN(Version);
+	V8_FUNCTN(Quit);
+	V8_FUNCTN(Version);
 	void ReportException(TryCatch* handler);
 	void LoadNativeLibraries(Handle<Object> natives);
 	

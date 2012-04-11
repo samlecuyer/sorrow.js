@@ -21,7 +21,7 @@ namespace sorrow {
     void FireExit() {
         HandleScope scope;
         TryCatch tryCatch;
-		Local<Value> func = internals->Get(String::New("fire"));
+		Local<Value> func = internals->Get(V8_STR("fire"));
 		
 		if (tryCatch.HasCaught() || func == Undefined()) {
 			return;
@@ -30,18 +30,18 @@ namespace sorrow {
 		Local<Function> f = Local<Function>::Cast(func);
         
 		Local<Object> global = Context::GetCurrent()->Global();
-		Local<Value> args[1] = { String::New("exit") };
+		Local<Value> args[1] = { V8_STR("exit") };
 		f->Call(global, 1, args);
     }
 	
-	JS_FUNCTN(Quit) {
+	V8_FUNCTN(Quit) {
 		int exit_code = args[0]->Int32Value();
 		exit(exit_code);
 		return Undefined();
 	} // Quit
 	
-	JS_FUNCTN(Version) {
-		return String::New(V8::GetVersion());
+	V8_FUNCTN(Version) {
+		return V8_STR(V8::GetVersion());
 	} // Version
 	
 	void ReportException(TryCatch* try_catch) {
@@ -100,7 +100,7 @@ namespace sorrow {
 		return scope.Close(result);
 	} // ExecuteString
     
-    JS_FUNCTN(CompileScript) {
+    V8_FUNCTN(CompileScript) {
 		HandleScope scope;
         Local<String> script = args[0]->ToString();
 		Local<String> source = args[1]->ToString();
@@ -115,14 +115,14 @@ namespace sorrow {
         if (env == NULL) {
             return Undefined();
         }
-        Local<String> ret = String::New(env);
+        Local<String> ret = V8_STR(env);
         return scope.Close(ret);
     }
 	
 	void Load(Handle<Object> internals) {
 		TryCatch tryCatch;
 		
-		Local<Value> func = ExecuteString(String::New(sorrow_native), String::New("sorrow.js"));
+		Local<Value> func = ExecuteString(V8_STR(sorrow_native), V8_STR("sorrow.js"));
 		
 		if (tryCatch.HasCaught()) {
 			ReportException(&tryCatch);
@@ -154,19 +154,19 @@ namespace sorrow {
         
 		Local<Array> lineArgs = Array::New(argc-1);
 		for (int i = 0; i +1 < argc; i++) {
-			lineArgs->Set(Integer::New(i), String::New(argv[i+1]));
+			lineArgs->Set(Integer::New(i), V8_STR(argv[i+1]));
 		}
-		internals->Set(String::New("args"), lineArgs);
+		internals->Set(V8_STR("args"), lineArgs);
 		
 		Handle<Object> libsObject = Object::New();
 		LoadNativeLibraries(libsObject);
-		internals->Set(String::New("stdlib"), libsObject);
+		internals->Set(V8_STR("stdlib"), libsObject);
         
         Handle<ObjectTemplate> env = ObjectTemplate::New();
         env->SetNamedPropertyHandler(EnvGetter);
-        internals->Set(String::New("env"), env->NewInstance());
+        internals->Set(V8_STR("env"), env->NewInstance());
         
-        internals->Set(String::New("global"), global);
+        internals->Set(V8_STR("global"), global);
 		
         BinaryTypes::Initialize(internals);
 		IOStreams::Initialize(internals);
@@ -200,7 +200,7 @@ namespace sorrow {
 	void LoadNativeLibraries(Handle<Object> libs) {
 		HandleScope scope;
 		for (int i = 1; natives[i].name; i++) {
-			Local<String> name = String::New(natives[i].name);
+			Local<String> name = V8_STR(natives[i].name);
 			Handle<String> source = String::New(natives[i].source, natives[i].source_len);
 			libs->Set(name, source);
 		}
