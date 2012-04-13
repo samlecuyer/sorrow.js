@@ -71,8 +71,8 @@ test.run({
         ok(new b.ByteArray('Hello, world', 'us-ascii'), 'should support ascii');
         ok(new b.ByteArray('こんにちは 世界', 'utf-8'), 'should support utf-8');
         throws(function() {
-            new b.ByteArray('Καλημέρα κόσμε', 'ebcdic');
-        }, 'TODO: implement transcoding!');
+            new b.ByteArray('Καλημέρα κόσμε', 'EBCDIC'); // not supported by iconv
+        }, 'EBCDIC is not a supported encoding and this should have failed');
     },
     testByteArray_LengthMustBeMutable: function() {
         var data = [1,2,3,4,5];
@@ -113,6 +113,13 @@ test.run({
         var data = [1,2,3,4,5];
         var a = new b.ByteArray(data);
         var c = a.toByteArray();
+        ok(c instanceof b.ByteArray, 'must be ByteArray');
+        equal(a.length, c.length, 'length of copy should be the same');
+    },
+    testByteArray_toByteArrayCharset: function() {
+        var data = [1,2,3,4,5];
+        var a = new b.ByteArray(data);
+        var c = a.toByteArray('ascii', 'utf-8');
         ok(c instanceof b.ByteArray, 'must be ByteArray');
         equal(a.length, c.length, 'length of copy should be the same');
     },

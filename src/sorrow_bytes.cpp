@@ -1,6 +1,9 @@
 #include "sorrow.h"
 #include "sorrow_bytes.h"
 
+#include <iconv.h>
+#include <errno.h>
+
 namespace sorrow {
     using namespace v8;
 
@@ -99,6 +102,65 @@ namespace sorrow {
         Bytes *ret = new Bytes(totalSize, newBytes);
         free(newBytes);
         return ret;
+    }
+    
+#define CLEANUP_CONVERSION(b,c,m) free(b); iconv_close(c); throw m;
+    Bytes *Bytes::transcode(const char* source, const char* target) {
+        if (this->len == 0) {
+            return new Bytes();
+        }
+        if ((source == target) || strcasecmp(source, target) == 0) {
+            return new Bytes(this);
+        }
+        iconv_t converter;
+        converter = iconv_open(source, target);
+        if (converter == iconv_t(-1)) {
+            throw "Unsupported charset";
+        }
+        
+        size_t size = this->len;
+        uint8_t *newBytes = (uint8_t*)malloc(size);
+        
+        size_t inBytesLeft = this->len;
+        size_t outBytesLeft = size;
+        char *inBuf = (char *)this->bytes;
+        char *outBuf = (char *)newBytes;
+        
+        size_t result = 0;
+        do {
+            result = iconv(converter, &inBuf, &inBytesLeft, &outBuf, &outBytesLeft);
+            if (result == (size_t)(-1)) {
+                switch (errno) {
+                    case EILSEQ:
+                        CLEANUP_CONVERSION(newBytes, converter, 
+                        "Transcoding stopped due to an input byte that does not belong to the input codeset.")
+                    case EINVAL:
+                        CLEANUP_CONVERSION(newBytes, converter, 
+                        "Transcoding stopped due to an incomplete character or shift sequence at the end of the input buffer.")
+                    case E2BIG: {
+                        size_t newSize = size + (this->len)/4;
+                        uint8_t *newerBytes = (uint8_t*)realloc(newBytes, newSize);
+                        if (newerBytes == NULL) {
+                            CLEANUP_CONVERSION(newBytes, converter, 
+                            "Could not allocate enough memory to perform transcoding")
+                        }
+                        outBuf = (char*)newerBytes + (outBuf - (char*)newBytes);
+                        newBytes = newerBytes;
+                        outBytesLeft += newSize - size;
+                        size = newSize;
+                    } break;
+                    default:
+                        CLEANUP_CONVERSION(newBytes, converter, "Conversion failed")
+                }
+            }
+        } while (result == -1);
+        iconv_close(converter);
+        
+        size_t len = outBuf - (char *)newBytes;
+        Bytes * bs = new Bytes(len, newBytes);
+        
+        free(newBytes);
+        return bs;
     }
     
     Handle<Array>Bytes::toArray() {

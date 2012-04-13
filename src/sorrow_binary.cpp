@@ -41,6 +41,43 @@ namespace sorrow {
         return Number::New(code);
     }
     
+    V8_FUNCTN(DecodeToString) {
+        HandleScope scope;
+        String::Utf8Value charset(args[0]->ToString());
+        Bytes *bytes = BYTES_FROM_BIN(args.This());
+        Bytes *transcodedBytes = bytes->transcode(*charset, "utf-8");
+        return String::New((const char*)transcodedBytes->getBytes(), transcodedBytes->getLength());
+    }
+    
+    
+    V8_FUNCTN(ToByteString) {
+        HandleScope scope;
+        Bytes *bytes = BYTES_FROM_BIN(args.This());
+        Bytes *bytesToUse = bytes;
+        if (args.Length()>=2) {
+            String::Utf8Value src(args[0]->ToString());
+            String::Utf8Value tgt(args[1]->ToString());
+            bytesToUse = bytes->transcode(*src, *tgt);
+        }
+		Local<Value> bsArgs[1] = { External::New((void*)bytesToUse) };
+		Local<Value> bs = byteString->NewInstance(1, bsArgs);
+        return scope.Close(bs);
+    }
+    
+    V8_FUNCTN(ToByteArray) {
+        HandleScope scope;
+        Bytes *bytes = BYTES_FROM_BIN(args.This());
+        Bytes *bytesToUse = bytes;
+        if (args.Length()>=2) {
+            String::Utf8Value src(args[0]->ToString());
+            String::Utf8Value tgt(args[1]->ToString());
+            bytesToUse = bytes->transcode(*src, *tgt);
+        }
+		Local<Value> baArgs[1] = { External::New((void*)bytesToUse) };
+		Local<Value> ba = byteArray->NewInstance(1, baArgs);
+        return scope.Close(ba);
+    }
+    
     /** 
      * ByteString functions
      */
@@ -76,7 +113,8 @@ namespace sorrow {
                 // ByteString(string, charset)
                 String::Utf8Value str(args[0]->ToString());
                 String::Utf8Value charset(args[1]->ToString());
-                bytes = new Bytes(str.length(), (uint8_t*)(*str));
+                Bytes *rawBytes = new Bytes(str.length(), (uint8_t*)(*str));
+                bytes = rawBytes->transcode("utf-8", *charset);
                 break;
         }
 		} catch ( char *e) {
@@ -99,12 +137,7 @@ namespace sorrow {
         
         return scope.Close(bs);
     }
-    
-    V8_FUNCTN(ByteStringDecodeToString) {
-        HandleScope scope;
-        Bytes *bytes = BYTES_FROM_BIN(args.This());
-        return String::New((const char*)bytes->getBytes(), bytes->getLength());
-    }
+
     
     V8_FUNCTN(ByteStringConcat) {
         HandleScope scope;
@@ -152,7 +185,8 @@ namespace sorrow {
                 // ByteString(string, charset)
                 String::Utf8Value str(args[0]->ToString());
                 String::Utf8Value charset(args[1]->ToString());
-                bytes = new Bytes(str.length(), (uint8_t*)*str);
+                Bytes *rawBytes = new Bytes(str.length(), (uint8_t*)(*str));
+                bytes = rawBytes->transcode("utf-8", *charset);
                 break;
         }
         } catch ( char *e) {
@@ -205,6 +239,9 @@ namespace sorrow {
         Local<ObjectTemplate> binary_ot = binary_t->PrototypeTemplate();
         SET_METHOD(binary_ot, "toArray", BinaryToArray);
         SET_METHOD(binary_ot, "codeAt", BinaryCodeAt)
+        SET_METHOD(binary_ot, "decodeToString", DecodeToString)
+        SET_METHOD(binary_ot, "toByteString", ToByteString)
+        SET_METHOD(binary_ot, "toByteArray", ToByteArray)
 		internals->Set(V8_STR("Binary"), binary_t->GetFunction());
 		
         // function ByteArray
@@ -229,7 +266,6 @@ namespace sorrow {
         
         byteString_ot->SetAccessor(V8_STR("length"), BinaryLengthGetter);
         byteString_ot->SetIndexedPropertyHandler(ByteStringIndexedGetter);
-        SET_METHOD(byteString_ot, "decodeToString", ByteStringDecodeToString)
         SET_METHOD(byteString_ot, "concat", ByteStringConcat)
         byteString_ot->SetInternalFieldCount(1);
 		

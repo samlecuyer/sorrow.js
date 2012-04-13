@@ -7,8 +7,9 @@
 namespace seventy {
 	using namespace v8;
 
-	JS_FUNCTN(SeventyTwo) {
-		return Integer::New(72);
+	V8_FUNCTN(SeventyTwo) {
+        int32_t arg = args[0]->Int32Value();
+		return Integer::New(72 + arg);
 	}
 
 	extern "C" Handle<Object> Initialize() {

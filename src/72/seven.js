@@ -16,6 +16,11 @@ function getPlugin() {
 
 if (module.id == require.main) {
     var p = getPlugin();
-	system.stdout.writeLine(p.load().getNum());
+    var s2 = p.load();
+    
+    system.stdout.writeLine('Enter a number: ');
+    var n = system.stdin.readLine();
+	system.stdout.writeLine(s2.getNum(n));
+    
     p.close();
 }

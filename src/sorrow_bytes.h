@@ -25,6 +25,7 @@ namespace sorrow {
         void    resize(size_t, bool); 
         
         Bytes *concat(const Arguments&);
+        Bytes *transcode(const char*, const char*);
         
         Handle<Array> toArray();
 

@@ -56,6 +56,12 @@
 				'PLATFORM="<(OS)"',
 			],
 
+			'link_settings': {
+            			'libraries': [
+             				 '-liconv',
+            			],
+          		},
+
 		}, #target sorrow
 		
 		{
