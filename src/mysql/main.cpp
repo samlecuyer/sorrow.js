@@ -47,13 +47,21 @@ namespace sorrow_mysql {
         HandleScope scope;
 		Handle<Object> connection = args.This();
         MYSQL *conn = (MYSQL*)connection->GetPointerFromInternalField(0);
+        char *host = NULL, *user = NULL, *passwd = NULL, *db = NULL;
+        int port = 0;
 
-        String::Utf8Value host(args[0]->ToString());
-        String::Utf8Value user(args[1]->ToString());
+        String::Utf8Value hostname(args[0]->ToString());
+        String::Utf8Value username(args[1]->ToString());
         String::Utf8Value pswd(args[2]->ToString());
-        String::Utf8Value dbnm(args[3]->ToString());
+        String::Utf8Value dbname(args[3]->ToString());
+        port = args[4]->IntegerValue();
         
-        if (mysql_real_connect(conn, *host, *user, *pswd, *dbnm, 0, NULL, 0) == NULL) {
+        if (args.Length() > 0) host = *hostname;
+        if (args.Length() > 1) user = *username;
+        if (args.Length() > 2) passwd = *pswd;
+        if (args.Length() > 3) db = *dbname;
+        
+        if (mysql_real_connect(conn, host, user, passwd, db, port, NULL, 0) == NULL) {
             return THROW(ERR(V8_STR(mysql_error(conn))))
         }
         
