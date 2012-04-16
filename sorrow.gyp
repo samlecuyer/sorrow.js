@@ -1,7 +1,7 @@
 {
 	'variables': {
 		'v8_use_snapshot%': 'true',
-		'target_arch': 'ia32',
+		'target_arch': 'x64',
 		
 		'werror': '',
 		'library_files': [

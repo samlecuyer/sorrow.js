@@ -31,7 +31,7 @@ distclean:
 	-rm -f config.mk
 
 dependencies:
-	svn co http://v8.googlecode.com/svn/trunk@10833 deps/v8 
+	svn co http://v8.googlecode.com/svn/trunk@11322 deps/v8 
 	svn co http://gyp.googlecode.com/svn/trunk@1249 tools/gyp 
 
 	
