@@ -1,6 +1,6 @@
 # sorrow.js
 
-A v8-based CommonJS implementation, currently under heavy development.  The current goals are:
+A v8-based CommonJS implementation, no longer under heavy development.  The original goals were:
 
   * **performance** - Be fast, whenever possible.
   * **minimalism** - Provide a full platform for JavaScript development, but don't go overboard.
@@ -11,3 +11,8 @@ sorrow depends on [v8](http://code.google.com/p/v8/) and [gyp](http://code.googl
 
 ## Legal
 sorrow is licensed under the BSD license.  This is available in the LICENSE file.
+
+## Current Status
+
+The original goals of this project were to provided an non-async competitor of node.js.
+The best way to appreciate a package is to rewrite it, and it turns out node is pretty swell :)
